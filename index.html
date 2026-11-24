@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="MBG SO Mobile" />
-  <meta name="mbg-app-version" content="26.11.67" />
+  <meta name="mbg-app-version" content="26.11.69" />
   <link id="pwaManifestLink" rel="manifest" href="" />
   <link id="pwaAppleIcon" rel="apple-touch-icon" href="" />
   <link id="pwaFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%231e3a8a'/%3E%3Ctext x='96' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='56' fill='%23ffffff'%3ENII%3C/text%3E%3Ctext x='96' y='142' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='40' fill='%2393c5fd'%3ESO%3C/text%3E%3C/svg%3E" />
@@ -386,7 +386,7 @@
         </div>
 
         <!-- Metric Grid Keseluruhan (Ringkas 2 Kolom di HP, 4 Kolom di Layar Lebar) -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div id="overallMetricGrid" class="hidden grid-cols-2 md:grid-cols-4 gap-2">
           <div class="bg-slate-50 dark:bg-slate-700/50 p-2 sm:p-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
             <span class="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Total QTY SO (Fisik)</span>
             <div class="flex items-baseline gap-1 mt-0.5">
@@ -2133,7 +2133,7 @@
             </svg>
             <span>Share HTML</span>
           </button>
-          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.67</span>
+          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.69</span>
         </div>
       </div>
     </div>
@@ -5159,7 +5159,12 @@
           sysQty: 0,
           soQty: 0,
           sysDus: 0,
-          soDus: 0
+          soDus: 0,
+          sealantSub: {
+            CTG: { counted: 0, sysQty: 0, soQty: 0, uncountedSysQty: 0, sysDus: 0, soDus: 0, uncountedSysDus: 0 },
+            SP: { counted: 0, sysQty: 0, soQty: 0, uncountedSysQty: 0, sysDus: 0, soDus: 0, uncountedSysDus: 0 },
+            OTHER: { counted: 0, sysQty: 0, soQty: 0, uncountedSysQty: 0 }
+          }
         };
       });
 
@@ -5190,13 +5195,34 @@
             st.activeStockItems = (st.activeStockItems || 0) + 1;
           }
           // Hitung sistem & SO secara apple-to-apple untuk item yang sudah di-SO (atau belum di-SO jika belum ada input)
+          const getSealantSubType = (it) => {
+            const pUnit = String(it.packUnit || '').toUpperCase();
+            const uName = String(it.name || '').toUpperCase();
+            if (pUnit.includes('SP') || pUnit.includes('SSG') || /\b(SP|SSG)\b/.test(uName) || uName.includes('(SP)') || uName.includes('- SP')) return 'SP';
+            if (pUnit.includes('CTG') || getItemPackSize(it) > 1) return 'CTG';
+            return 'OTHER';
+          };
+          const sSubKey = st.def.isSealant ? getSealantSubType(item) : null;
+
           if (isCounted) {
             st.countedItems++;
             st.sysQty += sysVal;
             st.soQty += cQty;
             if (st.def.isSealant) {
-              st.sysDus += calcSealantDusDecimal(item, sysVal);
-              st.soDus += calcSealantDusDecimal(item, cQty);
+              const sDus = calcSealantDusDecimal(item, sysVal);
+              const cDus = calcSealantDusDecimal(item, cQty);
+              st.sysDus += sDus;
+              st.soDus += cDus;
+              const sub = st.sealantSub[sSubKey];
+              if (sub) {
+                sub.counted++;
+                sub.sysQty += sysVal;
+                sub.soQty += cQty;
+                if (sub.sysDus !== undefined) {
+                  sub.sysDus += sDus;
+                  sub.soDus += cDus;
+                }
+              }
             }
             if (Math.abs(cQty - sysVal) < 0.001) {
               st.matchItems++;
@@ -5204,7 +5230,15 @@
           } else {
             st.uncountedSysQty = (st.uncountedSysQty || 0) + sysVal;
             if (st.def.isSealant) {
-              st.uncountedSysDus = (st.uncountedSysDus || 0) + calcSealantDusDecimal(item, sysVal);
+              const uDus = calcSealantDusDecimal(item, sysVal);
+              st.uncountedSysDus = (st.uncountedSysDus || 0) + uDus;
+              const sub = st.sealantSub[sSubKey];
+              if (sub) {
+                sub.uncountedSysQty += sysVal;
+                if (sub.uncountedSysDus !== undefined) {
+                  sub.uncountedSysDus += uDus;
+                }
+              }
             }
           }
         }
@@ -5287,6 +5321,24 @@
               : (Math.abs(displayDiffDus) < 0.01
                 ? 'text-emerald-700 dark:text-emerald-300'
                 : (displayDiffDus < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'));
+
+            const ctg = st.sealantSub.CTG;
+            const sp = st.sealantSub.SP;
+            const ctgHas = ctg.counted > 0;
+            const spHas = sp.counted > 0;
+
+            const ctgDiffQty = ctg.soQty - ctg.sysQty;
+            const ctgDiffDus = ctg.soDus - ctg.sysDus;
+            const ctgSysShow = ctgHas ? ctg.sysQty : ctg.uncountedSysQty;
+            const ctgDusShow = ctgHas ? ctg.soDus : ctg.uncountedSysDus;
+            const ctgColor = !ctgHas ? 'text-slate-400' : (Math.abs(ctgDiffQty) < 0.001 ? 'text-emerald-700 dark:text-emerald-300' : (ctgDiffQty < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'));
+
+            const spDiffQty = sp.soQty - sp.sysQty;
+            const spDiffDus = sp.soDus - sp.sysDus;
+            const spSysShow = spHas ? sp.sysQty : sp.uncountedSysQty;
+            const spDusShow = spHas ? sp.soDus : sp.uncountedSysDus;
+            const spColor = !spHas ? 'text-slate-400' : (Math.abs(spDiffQty) < 0.001 ? 'text-emerald-700 dark:text-emerald-300' : (spDiffQty < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'));
+
             sealantDusRow = `
               <div class="mt-1 pt-1 border-t border-emerald-200/80 dark:border-emerald-800/70 flex items-baseline justify-between text-[9.5px] sm:text-[10px]">
                 <span class="font-bold text-emerald-800 dark:text-emerald-300">Selisih Dus:</span>
@@ -5295,6 +5347,28 @@
               <div class="flex items-center justify-between text-[8.5px] sm:text-[9px] text-emerald-700/80 dark:text-emerald-400/90 leading-tight">
                 <span>SO:${fmtNum(st.soDus, 1)}</span>
                 <span>Sis:${fmtNum(displaySysDus, 1)}</span>
+              </div>
+              <div class="mt-1.5 pt-1 border-t border-emerald-300/60 dark:border-emerald-800/60 space-y-1 text-[8.5px] sm:text-[9px]">
+                <div class="rounded-lg bg-white/70 dark:bg-slate-900/50 px-1.5 py-1 border border-emerald-200/70 dark:border-emerald-800/50">
+                  <div class="flex items-center justify-between font-extrabold">
+                    <span class="text-emerald-900 dark:text-emerald-200">• CTG</span>
+                    <span class="tabular-nums ${ctgColor}">${!ctgHas ? 'Blm SO' : (ctgDiffQty > 0 ? '+' : '') + fmtNum(ctgDiffQty) + ' (' + (ctgDiffDus > 0 ? '+' : '') + fmtNum(ctgDiffDus, 1) + 'd)'}</span>
+                  </div>
+                  <div class="flex items-center justify-between text-slate-600 dark:text-slate-300 leading-tight mt-0.5">
+                    <span>SO:<b>${fmtNum(ctg.soQty)}</b> (${fmtNum(ctg.soDus, 1)}d)</span>
+                    <span>Sis:<b>${fmtNum(ctgSysShow)}</b> (${fmtNum(ctgDusShow, 1)}d)</span>
+                  </div>
+                </div>
+                <div class="rounded-lg bg-white/70 dark:bg-slate-900/50 px-1.5 py-1 border border-emerald-200/70 dark:border-emerald-800/50">
+                  <div class="flex items-center justify-between font-extrabold">
+                    <span class="text-teal-900 dark:text-teal-200">• SP/SSG</span>
+                    <span class="tabular-nums ${spColor}">${!spHas ? 'Blm SO' : (spDiffQty > 0 ? '+' : '') + fmtNum(spDiffQty) + ' (' + (spDiffDus > 0 ? '+' : '') + fmtNum(spDiffDus, 1) + 'd)'}</span>
+                  </div>
+                  <div class="flex items-center justify-between text-slate-600 dark:text-slate-300 leading-tight mt-0.5">
+                    <span>SO:<b>${fmtNum(sp.soQty)}</b> (${fmtNum(sp.soDus, 1)}d)</span>
+                    <span>Sis:<b>${fmtNum(spSysShow)}</b> (${fmtNum(spDusShow, 1)}d)</span>
+                  </div>
+                </div>
               </div>
             `;
           }
@@ -5553,6 +5627,72 @@
           </td>
         `;
         tbody.appendChild(tr);
+
+        if (catDef.key === 'Sealant') {
+          const subGroups = [
+            {
+              label: '↳ Sealant Cartridge (CTG)',
+              code: 'Sealant CTG (24/32)',
+              filterFn: it => {
+                const pu = String(it.packUnit || '').toUpperCase();
+                const un = String(it.name || '').toUpperCase();
+                const isSp = pu.includes('SP') || pu.includes('SSG') || /\b(SP|SSG)\b/.test(un) || un.includes('(SP)') || un.includes('- SP');
+                return !isSp && (pu.includes('CTG') || getItemPackSize(it) > 1);
+              }
+            },
+            {
+              label: '↳ Sealant Sausage (SP / SSG)',
+              code: 'Sealant SP/SSG (12)',
+              filterFn: it => {
+                const pu = String(it.packUnit || '').toUpperCase();
+                const un = String(it.name || '').toUpperCase();
+                return pu.includes('SP') || pu.includes('SSG') || /\b(SP|SSG)\b/.test(un) || un.includes('(SP)') || un.includes('- SP');
+              }
+            }
+          ];
+          subGroups.forEach(sg => {
+            const subItems = catItems.filter(sg.filterFn);
+            if (subItems.length === 0) return;
+            let sSys = 0, sFisik = 0, sFisikDus = 0, sSysDus = 0, sCnt = 0, sMatch = 0;
+            subItems.forEach(it => {
+              sSys += (it.sysQty || 0);
+              sSysDus += calcSealantDusDecimal(it, it.sysQty || 0);
+              if (it.countQty !== null && it.countQty !== undefined) {
+                sCnt++;
+                sFisik += it.countQty;
+                sFisikDus += calcSealantDusDecimal(it, it.countQty);
+                if (Math.abs(it.countQty - it.sysQty) < 0.001) sMatch++;
+              }
+            });
+            const sDiff = sFisik - sSys;
+            const sDiffDus = sFisikDus - sSysDus;
+            const sAcc = sCnt > 0 ? ((sMatch / sCnt) * 100).toFixed(0) + '%' : '-';
+            const subTr = document.createElement('tr');
+            subTr.className = 'bg-emerald-50/40 dark:bg-emerald-950/20 text-[11px] hover:bg-emerald-50/80 dark:hover:bg-emerald-950/35 transition';
+            subTr.innerHTML = `
+              <td class="py-2 px-3 pl-6">
+                <span class="font-semibold text-emerald-800 dark:text-emerald-300 block">${sg.label}</span>
+                <span class="text-[9.5px] text-slate-400">${sg.code}</span>
+              </td>
+              <td class="py-2 px-2 text-center text-slate-500">${subItems.length}</td>
+              <td class="py-2 px-2 text-center">
+                <span class="font-bold text-slate-700 dark:text-slate-200">${sCnt}</span>
+                <span class="text-[10px] text-slate-400">/ ${subItems.length}</span>
+              </td>
+              <td class="py-2 px-3 text-right text-slate-600 dark:text-slate-300">${fmtNum(sSys)}</td>
+              <td class="py-2 px-3 text-right font-bold text-slate-800 dark:text-slate-100">${sCnt > 0 ? fmtNum(sFisik) : '-'}</td>
+              <td class="py-2 px-3 text-right font-bold ${sCnt === 0 ? 'text-slate-400' : (Math.abs(sDiff) < 0.001 ? 'text-emerald-600' : (sDiff > 0 ? 'text-blue-600' : 'text-rose-600'))}">
+                ${sCnt > 0 ? (sDiff > 0 ? '+' : '') + fmtNum(sDiff) : '-'}
+              </td>
+              <td class="py-2 px-3 text-right font-semibold text-emerald-700 dark:text-emerald-300">${sCnt > 0 ? fmtNum(sFisikDus, 1) + ' dus (' + (sDiffDus > 0 ? '+' : '') + fmtNum(sDiffDus, 1) + ')' : fmtNum(sSysDus, 1) + ' dus (sis)'}</td>
+              <td class="py-2 px-3 text-center font-bold text-slate-600 dark:text-slate-300">${sAcc}</td>
+              <td class="py-2 px-3 text-center">
+                <span class="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">${sCnt > 0 ? 'Detail' : 'Belum'}</span>
+              </td>
+            `;
+            tbody.appendChild(subTr);
+          });
+        }
       });
 
       tbody.querySelectorAll('.btn-edit-history-row').forEach(btn => {
@@ -8986,7 +9126,7 @@
       } catch (e) {}
     }
 
-    const DEFAULT_APP_BUILD_NUMBER = '67';
+    const DEFAULT_APP_BUILD_NUMBER = '69';
 
     function getDynamicAppVersionCode() {
       let buildNum = DEFAULT_APP_BUILD_NUMBER;
