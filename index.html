@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="MBG SO Mobile" />
-  <meta name="mbg-app-version" content="26.11.71" />
+  <meta name="mbg-app-version" content="26.11.73" />
   <link id="pwaManifestLink" rel="manifest" href="" />
   <link id="pwaAppleIcon" rel="apple-touch-icon" href="" />
   <link id="pwaFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%231e3a8a'/%3E%3Ctext x='96' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='56' fill='%23ffffff'%3ENII%3C/text%3E%3Ctext x='96' y='142' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='40' fill='%2393c5fd'%3ESO%3C/text%3E%3C/svg%3E" />
@@ -312,20 +312,20 @@
     <div id="viewCount" class="flex flex-col gap-3">
 
       <!-- PILIH PERIODE ARSIP; HASIL HISTORY DITAMPILKAN KECIL DI SETIAP KARTU BARANG -->
-      <section id="countArchiveHistoryPanel" class="rounded-xl border border-slate-200/80 dark:border-slate-700/70 bg-white/80 dark:bg-slate-800/70 px-2.5 py-2">
-        <div class="flex items-center gap-2">
-          <span class="text-[10px] sm:text-[11px] font-extrabold text-slate-600 dark:text-slate-300 shrink-0">🕘 History SO</span>
+      <section id="countArchiveHistoryPanel" class="rounded-xl border border-slate-200/80 dark:border-slate-700/70 bg-white/80 dark:bg-slate-800/70 px-2 py-1.5">
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] font-extrabold text-slate-600 dark:text-slate-300 shrink-0">🕘 Arsip SO</span>
           <div id="countArchiveHistoryPicker" class="relative flex-1 min-w-0">
-            <button id="countArchiveHistoryPickerButton" type="button" aria-expanded="false" class="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-200 text-left">
-              <span id="countArchiveHistoryPickerLabel" class="truncate">-- Pilih arsip SO --</span><span class="shrink-0 text-slate-400">▾</span>
+            <button id="countArchiveHistoryPickerButton" type="button" aria-expanded="false" class="w-full flex items-center justify-between gap-1.5 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-[10px] font-bold text-slate-700 dark:text-slate-200 text-left leading-snug">
+              <span id="countArchiveHistoryPickerLabel" class="break-words whitespace-normal">-- Pilih arsip SO --</span><span class="shrink-0 text-slate-400 text-[10px]">▾</span>
             </button>
             <div id="countArchiveHistoryPickerMenu" class="hidden absolute left-0 right-0 top-full mt-1 z-[80] rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-2xl overflow-hidden">
-              <div class="p-2 border-b border-slate-100 dark:border-slate-700"><input id="countArchiveHistoryPickerSearch" type="search" placeholder="Cari cabang atau tanggal..." class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-xs font-normal"></div>
-              <div id="countArchiveHistoryPickerOptions" class="max-h-[38vh] overflow-y-auto overscroll-contain p-1"></div>
+              <div class="p-1.5 border-b border-slate-100 dark:border-slate-700"><input id="countArchiveHistoryPickerSearch" type="search" placeholder="Cari arsip SO..." class="w-full px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-[11px] font-normal"></div>
+              <div id="countArchiveHistoryPickerOptions" class="max-h-[34vh] overflow-y-auto overscroll-contain p-1 space-y-0.5"></div>
             </div>
             <select id="countArchiveHistorySelect" class="hidden" aria-hidden="true" tabindex="-1"><option value="">-- Pilih arsip SO --</option></select>
           </div>
-          <button id="btnRefreshCountArchiveHistory" type="button" class="px-2.5 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold" title="Muat ulang arsip">↻</button>
+          <button id="btnRefreshCountArchiveHistory" type="button" class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold shrink-0" title="Muat ulang arsip">↻</button>
         </div>
         <div id="countArchiveHistoryEmpty" class="hidden"></div>
       </section>
@@ -2159,7 +2159,7 @@
             </svg>
             <span>Share HTML</span>
           </button>
-          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.71</span>
+          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.73</span>
         </div>
       </div>
     </div>
@@ -5672,7 +5672,7 @@
               </div>
               <div class="flex items-center justify-between text-[8.5px] sm:text-[9px] text-emerald-700/80 dark:text-emerald-400/90 leading-tight">
                 <span>SO:${fmtNum(st.soDus, 1)}</span>
-                <span>Sis:${fmtNum(displaySysDus, 1)}</span>
+                <span>Sistem:${fmtNum(displaySysDus, 1)}</span>
               </div>
               <div class="mt-1.5 pt-1 border-t border-emerald-300/60 dark:border-emerald-800/60 space-y-1 text-[8.5px] sm:text-[9px]">
                 <div class="rounded-lg bg-white/70 dark:bg-slate-900/50 px-1.5 py-1 border border-emerald-200/70 dark:border-emerald-800/50">
@@ -5682,7 +5682,7 @@
                   </div>
                   <div class="flex items-center justify-between text-slate-600 dark:text-slate-300 leading-tight mt-0.5">
                     <span>SO:<b>${fmtNum(ctg.soQty)}</b> (${fmtNum(ctg.soDus, 1)}d)</span>
-                    <span>Sis:<b>${fmtNum(ctgSysShow)}</b> (${fmtNum(ctgDusShow, 1)}d)</span>
+                    <span>Sistem:<b>${fmtNum(ctgSysShow)}</b> (${fmtNum(ctgDusShow, 1)}d)</span>
                   </div>
                 </div>
                 <div class="rounded-lg bg-white/70 dark:bg-slate-900/50 px-1.5 py-1 border border-emerald-200/70 dark:border-emerald-800/50">
@@ -5692,7 +5692,7 @@
                   </div>
                   <div class="flex items-center justify-between text-slate-600 dark:text-slate-300 leading-tight mt-0.5">
                     <span>SO:<b>${fmtNum(sp.soQty)}</b> (${fmtNum(sp.soDus, 1)}d)</span>
-                    <span>Sis:<b>${fmtNum(spSysShow)}</b> (${fmtNum(spDusShow, 1)}d)</span>
+                    <span>Sistem:<b>${fmtNum(spSysShow)}</b> (${fmtNum(spDusShow, 1)}d)</span>
                   </div>
                 </div>
               </div>
@@ -5747,7 +5747,7 @@
               </div>
               <div class="flex items-center justify-between text-[9px] sm:text-[10px] text-slate-600 dark:text-slate-300 mt-0.5 leading-tight">
                 <span>SO: <b>${fmtNum(st.soQty)}</b></span>
-                <span>Sis: <b>${fmtNum(displaySysQty)}</b></span>
+                <span>Sistem: <b>${fmtNum(displaySysQty)}</b></span>
               </div>
               <div class="flex items-center justify-between text-[9px] sm:text-[10px] mt-1 pt-0.5 border-t border-black/5 dark:border-white/5">
                 <span class="text-slate-500 dark:text-slate-400 font-medium">${st.countedItems}/${st.activeStockItems || st.totalItems} item</span>
@@ -9048,15 +9048,15 @@
       const query = (document.getElementById('countArchiveHistoryPickerSearch')?.value || '').trim().toLowerCase();
       const visible = sortedArchives.filter(a => !query || formatCountArchiveDisplayName(a).toLowerCase().includes(query));
       const noArchiveSelected = !selectedCountArchiveHistoryId && !nativeSel.value;
-      const clearChoice = `<button type="button" data-archive-id="" class="w-full flex items-center justify-between gap-3 px-3 py-2.5 mb-1 rounded-lg text-left ${noArchiveSelected ? 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}"><span class="text-xs font-bold">Tanpa history / Jangan pilih arsip</span><span class="text-[10px] font-bold">${noArchiveSelected ? '✓ Aktif' : 'Pilih'}</span></button>`;
+      const clearChoice = `<button type="button" data-archive-id="" class="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-left ${noArchiveSelected ? 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}"><span class="text-[11px] font-bold">Tanpa history / Jangan pilih arsip</span><span class="text-[9px] font-bold shrink-0">${noArchiveSelected ? '✓ Aktif' : 'Pilih'}</span></button>`;
       options.innerHTML = clearChoice + (visible.length ? visible.map(a => {
         const isSelected = a.archiveId === (nativeSel.value || selectedCountArchiveHistoryId);
         const count = Number(a.countedItems || (Array.isArray(a.items) ? a.items.length : 0));
-        return `<button type="button" data-archive-id="${escapeHtml(a.archiveId || '')}" class="w-full flex items-center justify-between gap-3 px-3 py-3 rounded-lg text-left ${isSelected ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-200' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}">
-          <span class="min-w-0"><span class="block text-xs font-extrabold truncate">${escapeHtml(formatCountArchiveDisplayName(a))}</span><span class="block mt-0.5 text-[10px] font-normal text-slate-500 dark:text-slate-400">${escapeHtml(String(count))} item · ${escapeHtml(a.savedBy || 'ADMIN')}</span></span>
-          <span class="shrink-0 text-[10px] font-bold ${isSelected ? 'text-indigo-600 dark:text-indigo-300' : 'text-slate-400'}">${isSelected ? '✓ Dipilih' : 'Pilih'}</span>
+        return `<button type="button" data-archive-id="${escapeHtml(a.archiveId || '')}" class="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-left ${isSelected ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-200' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}">
+          <span class="min-w-0 flex-1"><span class="block text-[11px] font-extrabold break-words whitespace-normal leading-snug">${escapeHtml(formatCountArchiveDisplayName(a))}</span><span class="block text-[9.5px] font-normal text-slate-500 dark:text-slate-400">${escapeHtml(String(count))} item</span></span>
+          <span class="shrink-0 text-[9px] font-bold ${isSelected ? 'text-indigo-600 dark:text-indigo-300' : 'text-slate-400'}">${isSelected ? '✓ Dipilih' : 'Pilih'}</span>
         </button>`;
-      }).join('') : '<div class="px-3 py-4 text-center text-xs font-normal text-slate-400">Arsip tidak ditemukan.</div>');
+      }).join('') : '<div class="px-2.5 py-3 text-center text-[11px] font-normal text-slate-400">Arsip tidak ditemukan.</div>');
     }
 
     function renderCountArchiveHistoryOptions(preferredId = '') {
@@ -9104,7 +9104,7 @@
       const totalFisik = Number(arc.totalFisikQty) || items.reduce((n, it) => n + (it.countQty || 0), 0);
       const totalDiff = Number(arc.netDiffQty) || (totalFisik - totalSys);
       const meta = document.getElementById('countArchiveHistoryMeta');
-      if (meta) meta.textContent = `${formatCountArchiveDisplayName(arc)} · Disimpan ${arc.savedAt || (arc.timestamp ? new Date(arc.timestamp).toLocaleString('id-ID') : '-')} · ${arc.savedBy || '-'}`;
+      if (meta) meta.textContent = `${formatCountArchiveDisplayName(arc)} · Disimpan ${arc.savedAt || (arc.timestamp ? new Date(arc.timestamp).toLocaleString('id-ID') : '-')}`;
       const metrics = document.getElementById('countArchiveHistoryMetrics');
       if (metrics) {
         const cards = [
@@ -9713,7 +9713,7 @@
       } catch (e) {}
     }
 
-    const DEFAULT_APP_BUILD_NUMBER = '71';
+    const DEFAULT_APP_BUILD_NUMBER = '73';
 
     function getDynamicAppVersionCode() {
       let buildNum = DEFAULT_APP_BUILD_NUMBER;
@@ -13900,7 +13900,7 @@ function doPost(e) {
             <div class="rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 p-2.5 flex items-center justify-between gap-2 text-[11px]">
               <span class="font-bold text-emerald-900 dark:text-emerald-200">Konversi Dus Sealant</span>
               <span class="font-black tabular-nums text-right ${diffDus < 0 ? 'text-rose-600' : diffDus > 0 ? 'text-blue-600' : 'text-emerald-700'}">
-                SO ${fmtNum(soDus, 1)}d vs Sis ${fmtNum(sysDus, 1)}d (${diffDus > 0 ? '+' : ''}${fmtNum(diffDus, 1)}d)
+                SO ${fmtNum(soDus, 1)}d vs Sistem ${fmtNum(sysDus, 1)}d (${diffDus > 0 ? '+' : ''}${fmtNum(diffDus, 1)}d)
               </span>
             </div>`;
         }
@@ -13926,7 +13926,7 @@ function doPost(e) {
                 <span class="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">${escapeHtml(x.item.name || '-')}</span>
               </div>
               <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                SO: <b>${fmtNum(x.fisik)}</b> • Sis: <b>${fmtNum(x.sys)}</b>${x.item.loc ? ` • Rak: <b>${escapeHtml(x.item.loc)}</b>` : ''}
+                SO: <b>${fmtNum(x.fisik)}</b> • Sistem: <b>${fmtNum(x.sys)}</b>${x.item.loc ? ` • Rak: <b>${escapeHtml(x.item.loc)}</b>` : ''}
               </div>
             </div>
             <span class="px-2 py-1 rounded-lg text-xs font-black tabular-nums shrink-0 ${x.diff < 0 ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300'}">
