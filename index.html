@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="MBG SO Mobile" />
-  <meta name="mbg-app-version" content="26.11.69" />
+  <meta name="mbg-app-version" content="26.11.70" />
   <link id="pwaManifestLink" rel="manifest" href="" />
   <link id="pwaAppleIcon" rel="apple-touch-icon" href="" />
   <link id="pwaFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%231e3a8a'/%3E%3Ctext x='96' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='56' fill='%23ffffff'%3ENII%3C/text%3E%3Ctext x='96' y='142' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='40' fill='%2393c5fd'%3ESO%3C/text%3E%3C/svg%3E" />
@@ -1585,10 +1585,6 @@
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           <span>Hapus</span>
         </button>
-        <button id="btnMarkMatchModal" type="button" class="px-3 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400 font-semibold hover:bg-emerald-100 text-xs flex items-center gap-1 transition active:scale-95">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <span>Cocokkan</span>
-        </button>
         <button id="btnSaveCount" type="button" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 flex items-center justify-center gap-1.5 transition active:scale-[0.98]">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7"/></svg>
           <span>Simpan Hasil SO</span>
@@ -2133,7 +2129,7 @@
             </svg>
             <span>Share HTML</span>
           </button>
-          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.69</span>
+          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.70</span>
         </div>
       </div>
     </div>
@@ -5076,7 +5072,60 @@
       }
     ];
 
+    const SO_TARGET_CATS_KEY = 'mbg_so_target_categories_v1';
     let selectedSoTargetCategories = new Set();
+
+    function getSoTargetCatsStorageKey(branchOverride) {
+      const b = normalizeBranchCode(branchOverride || getActiveBranchCode()) || 'CENGKARENG';
+      return b === 'CENGKARENG' ? SO_TARGET_CATS_KEY : `${SO_TARGET_CATS_KEY}__${b}`;
+    }
+
+    function loadSoTargetCategories(branchOverride) {
+      try {
+        const raw = localStorage.getItem(getSoTargetCatsStorageKey(branchOverride));
+        if (raw) {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) {
+            selectedSoTargetCategories = new Set(arr.map(x => String(x || '').trim()).filter(Boolean));
+            return;
+          }
+        }
+      } catch (e) {}
+      selectedSoTargetCategories = new Set();
+    }
+
+    function saveSoTargetCategories(pushToSheet = true) {
+      const arr = Array.from(selectedSoTargetCategories);
+      try {
+        localStorage.setItem(getSoTargetCatsStorageKey(), JSON.stringify(arr));
+      } catch (e) {}
+      if (pushToSheet && typeof syncConfig !== 'undefined' && syncConfig.url && (syncConfig.checker || '').trim().toUpperCase() === 'ANDRI') {
+        pushItemToGoogleSheets({
+          action: 'save_target_categories',
+          branch: getActiveBranchCode(),
+          checker: 'ANDRI',
+          targetCategories: arr
+        });
+      }
+    }
+
+    function applyServerTargetCategories(serverCats, respBranch) {
+      const targetB = normalizeBranchCode(respBranch || getActiveBranchCode()) || getActiveBranchCode();
+      if (targetB !== getActiveBranchCode()) return;
+      if (!Array.isArray(serverCats)) return;
+      const nextSet = new Set(serverCats.map(x => String(x || '').trim()).filter(Boolean));
+      const curArr = Array.from(selectedSoTargetCategories).sort();
+      const nextArr = Array.from(nextSet).sort();
+      if (JSON.stringify(curArr) !== JSON.stringify(nextArr)) {
+        selectedSoTargetCategories = nextSet;
+        try {
+          localStorage.setItem(getSoTargetCatsStorageKey(targetB), JSON.stringify(Array.from(nextSet)));
+        } catch (e) {}
+        updateKPIs();
+        renderItems();
+        if (currentMainView === 'recap') renderRecapView();
+      }
+    }
 
     function normalizeSummaryCategoryKey(rawCat) {
       const c = String(rawCat || '').trim().toUpperCase();
@@ -5103,8 +5152,15 @@
       return selectedSoTargetCategories.has(normalizeSummaryCategoryKey(item && item.cat));
     }
 
+    function isItemLockedByTargetCategory(item) {
+      if (!item) return false;
+      if (!selectedSoTargetCategories || selectedSoTargetCategories.size === 0) return false;
+      return !selectedSoTargetCategories.has(normalizeSummaryCategoryKey(item.cat));
+    }
+
     function syncSoCategoryChecklistUI() {
       const isPartial = selectedSoTargetCategories.size > 0;
+      const isAndriUser = typeof isAuthenticatedSession !== 'undefined' && isAuthenticatedSession && String((syncConfig && syncConfig.checker) || '').trim().toUpperCase() === 'ANDRI';
       const modeBadge = document.getElementById('soScopeModeBadge');
       const hintEl = document.getElementById('soCategoryChecklistHint');
       const resetBtn = document.getElementById('btnResetSoCategoryChecklist');
@@ -5122,14 +5178,18 @@
 
       if (hintEl) {
         if (!isPartial) {
-          hintEl.textContent = 'Tidak ada ceklist dipilih → Otomatis SO Full';
+          hintEl.textContent = isAndriUser
+            ? 'Tidak ada ceklist dipilih → Otomatis SO Full (Khusus ANDRI)'
+            : 'Mode SO Full aktif (Diatur oleh Admin ANDRI)';
         } else {
-          hintEl.textContent = `Fokus SO & Akurasi menghitung ${selectedSoTargetCategories.size} kategori terpilih`;
+          hintEl.textContent = isAndriUser
+            ? `Kategori terpilih aktif • Kategori lain otomatis dikunci (${selectedSoTargetCategories.size} dipilih)`
+            : `Hanya ${selectedSoTargetCategories.size} kategori terpilih yang dibuka untuk SO (Kategori lain dikunci ANDRI)`;
         }
       }
 
       if (resetBtn) {
-        resetBtn.classList.toggle('hidden', !isPartial);
+        resetBtn.classList.toggle('hidden', !isPartial || !isAndriUser);
       }
 
       document.querySelectorAll('.so-cat-chk-label').forEach(lbl => {
@@ -5137,10 +5197,15 @@
         const def = SO_SUMMARY_CATEGORIES.find(d => d.key === key);
         const inp = lbl.querySelector('input[type="checkbox"]');
         const checked = selectedSoTargetCategories.has(key);
-        if (inp) inp.checked = checked;
+        if (inp) {
+          inp.checked = checked;
+          inp.disabled = !isAndriUser;
+        }
         if (def) {
           const hideOthers = (key === 'Lainnya' && lbl.getAttribute('data-has-items') !== '1' && !checked) ? 'hidden ' : '';
-          lbl.className = `${hideOthers}so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border font-bold transition ${checked ? def.chkActiveCls : def.chkInactiveCls}`;
+          const cursorCls = isAndriUser ? 'cursor-pointer' : 'cursor-not-allowed opacity-85';
+          lbl.title = isAndriUser ? `Klik untuk memilih/batalkan target SO kategori ${def.label}` : 'Pengaturan target kategori SO hanya dapat diubah oleh ANDRI';
+          lbl.className = `${hideOthers}so-cat-chk-label ${cursorCls} select-none inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border font-bold transition ${checked ? def.chkActiveCls : def.chkInactiveCls}`;
         }
       });
     }
@@ -5409,10 +5474,7 @@
           card.addEventListener('click', () => {
             const catKey = card.getAttribute('data-filter-cat');
             const profEl = document.getElementById('profileFilter');
-            if (selectedSoTargetCategories.size > 0 && !selectedSoTargetCategories.has(catKey)) {
-              selectedSoTargetCategories.add(catKey);
-              syncSoCategoryChecklistUI();
-            }
+            // Hanya filter tampilan daftar barang; target kategori SO hanya diatur ANDRI lewat ceklist
             if (profEl) {
               profEl.value = (currentProfile === catKey) ? 'all' : catKey;
               currentProfile = profEl.value;
@@ -5793,8 +5855,9 @@
     let editingLogTarget = null;
 
     function openEditLogModal(userKey, timestamp, itemId) {
-      if (isEditBlockedByLock()) {
-        showToast('Data SO sedang dikunci oleh ANDRI. Tidak dapat diedit.', false);
+      const targetItemObj = allItems.find(it => it.id === Number(itemId));
+      if (isEditBlockedByLock(targetItemObj)) {
+        showToast(getItemLockMessage(targetItemObj), false);
         return;
       }
       const uKey = String(userKey || '').trim().toUpperCase();
@@ -6187,7 +6250,7 @@
             ${item.ket || '-'}
           </td>
           <td class="py-2.5 px-2.5 text-center no-print">
-            ${isEditBlockedByLock()
+            ${isEditBlockedByLock(item)
               ? `<span class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-400 font-bold text-[10px]">🔒</span>`
               : `<button class="btn-recap-edit px-2 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-brand-600 dark:text-blue-400 font-bold rounded-lg text-[10px]" data-id="${item.id}">
                   Koreksi
@@ -6265,7 +6328,7 @@
           <td class="py-2 px-2 text-center">${badge}</td>
           <td class="py-2 px-2.5 text-slate-600 dark:text-slate-300 truncate max-w-[80px]">${item.loc || '-'}</td>
           <td class="py-2 px-2 text-center no-print">
-            ${isEditBlockedByLock()
+            ${isEditBlockedByLock(item)
               ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-400 font-bold text-[10px]">🔒</span>`
               : `<button class="btn-master-edit p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-600 text-brand-600" data-id="${item.id}" title="Edit">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -6290,7 +6353,7 @@
       const query = currentSearch.toLowerCase().trim();
 
       return allItems.filter(item => {
-        if (!isItemInActiveSoScope(item)) return false;
+        if (isExcludedNonSoItem(item)) return false;
 
         if (query) {
           const matchName = item.name.toLowerCase().includes(query);
@@ -6493,10 +6556,10 @@
           ${locContent}
 
           <div class="flex items-center gap-2 pt-1 no-print">
-            ${isEditBlockedByLock() ? `
+            ${isEditBlockedByLock(item) ? `
               <button type="button" class="btn-count-item flex-1 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold text-xs flex items-center justify-center gap-1.5 cursor-not-allowed" data-id="${item.id}">
                 <span>🔒</span>
-                <span>Terkunci oleh ANDRI</span>
+                <span>${isItemLockedByTargetCategory(item) ? 'Kategori Tidak Di-SO (Terkunci)' : 'Terkunci oleh ANDRI'}</span>
               </button>
             ` : `
               <button class="btn-count-item flex-1 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/20 active:scale-[0.98] transition" data-id="${item.id}">
@@ -6504,13 +6567,6 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                 </svg>
                 <span>${isCounted ? 'Tambah / Edit SO' : 'Input Hasil SO'}</span>
-              </button>
-
-              <button class="btn-quick-match px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/70 text-xs font-bold flex items-center gap-1 transition active:scale-95" data-id="${item.id}" title="Tandai Cocok dengan Sistem">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <span>Cocokkan</span>
               </button>
 
               ${isCounted ? `
@@ -6550,12 +6606,12 @@
 
     // Modal Count Handling
     function openCountModal(id) {
-      if (isEditBlockedByLock()) {
-        showToast('Data SO sedang dikunci oleh ANDRI. Tidak dapat ditambah atau diedit.', false);
-        return;
-      }
       const item = allItems.find(it => it.id === id);
       if (!item) return;
+      if (isEditBlockedByLock(item)) {
+        showToast(getItemLockMessage(item), false);
+        return;
+      }
 
       activeEditingId = id;
       document.getElementById('modalItemNo').textContent = '#' + item.id;
@@ -6839,14 +6895,14 @@
     }
 
     function saveModalCount() {
-      if (isEditBlockedByLock()) {
-        showToast(syncConfig.isLocked ? 'Data SO sedang dikunci oleh ANDRI. Perubahan tidak disimpan.' : 'Sesi login tidak aktif. Silakan login kembali.', false);
+      const item = allItems.find(it => it.id === activeEditingId);
+      if (!item) return;
+      if (isEditBlockedByLock(item)) {
+        showToast(getItemLockMessage(item), false);
         document.getElementById('countModal').classList.add('hidden');
         return;
       }
       if (isSavingModal) return;
-      const item = allItems.find(it => it.id === activeEditingId);
-      if (!item) return;
       const saveBtn = document.getElementById('btnSaveCount');
       isSavingModal = true;
       if (saveBtn) saveBtn.disabled = true;
@@ -7031,12 +7087,12 @@
     }
 
     function quickResetItem(id) {
-      if (isEditBlockedByLock()) {
-        showToast(syncConfig.isLocked ? 'Data SO sedang dikunci oleh ANDRI.' : 'Silakan login sebelum mengubah data SO.', false);
-        return;
-      }
       const item = allItems.find(it => it.id === id);
       if (!item) return;
+      if (isEditBlockedByLock(item)) {
+        showToast(getItemLockMessage(item), false);
+        return;
+      }
       const currentUserKey = (syncConfig.checker || 'UMUM').trim().toUpperCase() || 'UMUM';
       item.userCounts = item.userCounts || {};
       delete item.userCounts[currentUserKey];
@@ -8132,6 +8188,7 @@
       saveSyncConfig();
 
       // Muat data & log cabang yang dipilih
+      loadSoTargetCategories(nextBranch);
       allItems = loadFromStorage();
       loadUserLogs();
       restoreAllUserCountsFromLog();
@@ -8912,11 +8969,25 @@
       syncBranchDropdownOptions();
     }
 
-    function isEditBlockedByLock() {
+    function isEditBlockedByLock(item = null) {
       // All write paths require a live login session; ANDRI may perform controlled admin overrides.
       if (!isAuthenticatedSession || !String(syncConfig.checker || '').trim()) return true;
       syncConfig.isLocked = isBranchLocked();
-      return Boolean(syncConfig.isLocked) && (syncConfig.checker || '').trim().toUpperCase() !== 'ANDRI';
+      const isAndriUser = (syncConfig.checker || '').trim().toUpperCase() === 'ANDRI';
+      if (Boolean(syncConfig.isLocked) && !isAndriUser) return true;
+      if (item && isItemLockedByTargetCategory(item)) return true;
+      return false;
+    }
+
+    function getItemLockMessage(item = null) {
+      if (!isAuthenticatedSession || !String(syncConfig.checker || '').trim()) {
+        return 'Sesi login tidak aktif. Silakan login kembali.';
+      }
+      if (item && isItemLockedByTargetCategory(item)) {
+        const activeCats = Array.from(selectedSoTargetCategories).join(', ');
+        return `Kategori ${normalizeSummaryCategoryKey(item.cat)} dikunci (Target SO aktif hanya: ${activeCats}).`;
+      }
+      return 'Data SO sedang dikunci oleh ANDRI.';
     }
 
     function getEffectiveOnlineUsers() {
@@ -9126,7 +9197,7 @@
       } catch (e) {}
     }
 
-    const DEFAULT_APP_BUILD_NUMBER = '69';
+    const DEFAULT_APP_BUILD_NUMBER = '70';
 
     function getDynamicAppVersionCode() {
       let buildNum = DEFAULT_APP_BUILD_NUMBER;
@@ -9330,6 +9401,9 @@
           }
           if (Array.isArray(json.productDatabase) && json.productDatabase.length > 0) {
             applyServerProductDatabase(json.productDatabase);
+          }
+          if (Array.isArray(json.targetCategories)) {
+            applyServerTargetCategories(json.targetCategories, json.branch || getActiveBranchCode());
           }
           const respBranch = normalizeBranchCode(json.branch || getActiveBranchCode()) || getActiveBranchCode();
           if (respBranch === getActiveBranchCode()) {
@@ -9916,6 +9990,7 @@
       initPWA();
       loadUserLogs();
       loadSyncConfig();
+      loadSoTargetCategories();
       setupTheme();
       allItems = loadFromStorage();
       restoreAllUserCountsFromLog();
@@ -10882,6 +10957,11 @@ function doGet(e) {
 
   var sysDate = String(sheet.getRange('B3').getValue() || '').replace(/^Per\s*Tgl\.?\s*/i, '').trim() || '13 Nov 2026';
   var isLocked = props.getProperty('LOCK_' + branch) === 'TRUE';
+  var targetCategories = [];
+  try {
+    var rawTC = props.getProperty('TARGET_CATS_' + branch);
+    if (rawTC) targetCategories = JSON.parse(rawTC) || [];
+  } catch (errTC) {}
   var onlineUsers = [];
   try { onlineUsers = JSON.parse(props.getProperty('ONLINE_' + branch) || '[]'); } catch (err) {}
 
@@ -10988,6 +11068,7 @@ function doGet(e) {
     warehouseName: branch,
     systemDate: sysDate,
     isLocked: isLocked,
+    targetCategories: targetCategories,
     onlineUsers: onlineUsers,
     userAccess: userAccessObj,
     quickBatch: quickBatchObj,
@@ -11144,6 +11225,17 @@ function doPost(e) {
       var nextLock = Boolean(data.isLocked || data.locked);
       props.setProperty('LOCK_' + branch, nextLock ? 'TRUE' : 'FALSE');
       return ContentService.createTextOutput(JSON.stringify({ status: 'ok', branch: branch, isLocked: nextLock }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (data.action === 'save_target_categories') {
+      if (checker !== 'ANDRI') {
+        return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Hanya ANDRI yang dapat memilih target kategori SO.' }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      var catsArr = Array.isArray(data.targetCategories) ? data.targetCategories : [];
+      props.setProperty('TARGET_CATS_' + branch, JSON.stringify(catsArr));
+      return ContentService.createTextOutput(JSON.stringify({ status: 'ok', branch: branch, targetCategories: catsArr }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -11986,34 +12078,45 @@ function doPost(e) {
 
       document.querySelectorAll('.so-cat-checkbox').forEach(chk => {
         chk.addEventListener('change', (e) => {
+          const isAndriUser = isAuthenticatedSession && (syncConfig.checker || '').trim().toUpperCase() === 'ANDRI';
+          if (!isAndriUser) {
+            e.preventDefault();
+            e.target.checked = selectedSoTargetCategories.has(e.target.value);
+            showToast('Akses ditolak: Hanya user ANDRI yang dapat memilih target kategori SO.', false);
+            return;
+          }
           const key = e.target.value;
           if (e.target.checked) {
             selectedSoTargetCategories.add(key);
           } else {
             selectedSoTargetCategories.delete(key);
           }
-          const profEl = document.getElementById('profileFilter');
-          if (profEl && currentProfile !== 'all' && selectedSoTargetCategories.size > 0 && !selectedSoTargetCategories.has(currentProfile)) {
-            profEl.value = 'all';
-            currentProfile = 'all';
-          }
+          saveSoTargetCategories(true);
           currentPage = 1;
           updateKPIs();
           renderItems();
+          if (currentMainView === 'recap') renderRecapView();
+          if (selectedSoTargetCategories.size > 0) {
+            showToast(`Target SO dikunci hanya untuk: ${Array.from(selectedSoTargetCategories).join(', ')}`);
+          } else {
+            showToast('Mode kembali ke SO Full (Semua Kategori dibuka)');
+          }
         });
       });
 
       document.getElementById('btnResetSoCategoryChecklist')?.addEventListener('click', () => {
-        selectedSoTargetCategories.clear();
-        const profEl = document.getElementById('profileFilter');
-        if (profEl) {
-          profEl.value = 'all';
-          currentProfile = 'all';
+        const isAndriUser = isAuthenticatedSession && (syncConfig.checker || '').trim().toUpperCase() === 'ANDRI';
+        if (!isAndriUser) {
+          showToast('Akses ditolak: Hanya user ANDRI yang dapat mengubah target kategori SO.', false);
+          return;
         }
+        selectedSoTargetCategories.clear();
+        saveSoTargetCategories(true);
         currentPage = 1;
         updateKPIs();
         renderItems();
-        showToast('Mode kembali ke SO Full (Semua Kategori)');
+        if (currentMainView === 'recap') renderRecapView();
+        showToast('Mode kembali ke SO Full (Semua Kategori dibuka)');
       });
 
       document.getElementById('sortSelect').addEventListener('change', (e) => {
@@ -12083,17 +12186,7 @@ function doPost(e) {
         }
       });
 
-      document.getElementById('btnMarkMatchModal').addEventListener('click', () => {
-        if (isEditBlockedByLock()) {
-          showToast(syncConfig.isLocked ? 'Data SO sedang dikunci oleh ANDRI.' : 'Sesi login tidak aktif.', false);
-          document.getElementById('countModal').classList.add('hidden');
-          return;
-        }
-        if (activeEditingId) {
-          quickMarkMatch(activeEditingId);
-          document.getElementById('countModal').classList.add('hidden');
-        }
-      });
+
 
       document.querySelectorAll('.calc-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -12756,6 +12849,11 @@ function doPost(e) {
 
         if (!name) {
           showToast('Nama barang wajib diisi', false);
+          return;
+        }
+        if (isItemLockedByTargetCategory({ cat, name })) {
+          const activeCats = Array.from(selectedSoTargetCategories).join(', ');
+          showToast(`Kategori ${normalizeSummaryCategoryKey(cat)} sedang dikunci! Pilih kategori target SO (${activeCats}).`, false);
           return;
         }
         if (isNaN(qty)) {
