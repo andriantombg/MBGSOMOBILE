@@ -312,6 +312,25 @@
     <!-- VIEW 1: DAFTAR HITUNG SO (CHECKLIST/INPUT) -->
     <!-- ========================================== -->
     <div id="viewCount" class="flex flex-col gap-3">
+
+      <!-- PILIH PERIODE ARSIP; HASIL HISTORY DITAMPILKAN KECIL DI SETIAP KARTU BARANG -->
+      <section id="countArchiveHistoryPanel" class="rounded-xl border border-slate-200/80 dark:border-slate-700/70 bg-white/80 dark:bg-slate-800/70 px-2.5 py-2">
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] sm:text-[11px] font-extrabold text-slate-600 dark:text-slate-300 shrink-0">🕘 History SO</span>
+          <div id="countArchiveHistoryPicker" class="relative flex-1 min-w-0">
+            <button id="countArchiveHistoryPickerButton" type="button" aria-expanded="false" class="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-200 text-left">
+              <span id="countArchiveHistoryPickerLabel" class="truncate">-- Pilih arsip SO --</span><span class="shrink-0 text-slate-400">▾</span>
+            </button>
+            <div id="countArchiveHistoryPickerMenu" class="hidden absolute left-0 right-0 top-full mt-1 z-[80] rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-2xl overflow-hidden">
+              <div class="p-2 border-b border-slate-100 dark:border-slate-700"><input id="countArchiveHistoryPickerSearch" type="search" placeholder="Cari cabang atau tanggal..." class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-xs font-normal"></div>
+              <div id="countArchiveHistoryPickerOptions" class="max-h-[38vh] overflow-y-auto overscroll-contain p-1"></div>
+            </div>
+            <select id="countArchiveHistorySelect" class="hidden" aria-hidden="true" tabindex="-1"><option value="">-- Pilih arsip SO --</option></select>
+          </div>
+          <button id="btnRefreshCountArchiveHistory" type="button" class="px-2.5 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold" title="Muat ulang arsip">↻</button>
+        </div>
+        <div id="countArchiveHistoryEmpty" class="hidden"></div>
+      </section>
       
       <!-- KPI SUMMARY DASHBOARD (Collapsible) -->
       <section id="dashboardPanel" class="bg-white dark:bg-slate-800 rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-200 dark:border-slate-700 transition-all space-y-2.5">
@@ -3405,6 +3424,7 @@
       soArchives = JSON.parse(localStorage.getItem(SO_ARCHIVE_KEY) || '[]') || [];
       if (!Array.isArray(soArchives)) soArchives = [];
     } catch (e) { soArchives = []; }
+    let selectedCountArchiveHistoryId = '';
     const ADMIN_PASSWORD_HASH_KEY = 'mbg_so_admin_password_hash_v2';
     const DEFAULT_ADMIN_PASSWORD_HASH = 'b691eb0ae02c3c137f83b6b99f1b3fba9a18ac73ccbc90f550060cd1eb91a1d4';
     let isAuthenticatedSession = false;
@@ -4712,11 +4732,159 @@
       addAnalysisAuditLog({activity:checked?'KROSCEK SELESAI':'KROSCEK DIBUKA',status:checked?'DONE':'WAITING',items:`ID ${parts[1]||'?'} ↔ ID ${parts[2]||'?'}`,note,pairKey});
       renderAnalysisView();
     }
+
+    // =========================================================
+    // PROFESSIONAL EXCEL EXPORT DESIGN — berlaku untuk seluruh
+    // workbook ekspor agar format konsisten di semua menu.
+    // =========================================================
+    function applyProfessionalExcelDesign(workbook) {
+      if (!workbook || !Array.isArray(workbook.SheetNames)) return;
+      const C = {
+        navy: '17365D', blue: '1F4E78', lightBlue: 'D9EAF7',
+        pale: 'F3F6FA', white: 'FFFFFF', ink: '243247',
+        border: 'D7DEE8', muted: '64748B', green: 'E2F0D9'
+      };
+      const thinBorder = {
+        top: { style: 'thin', color: { rgb: C.border } },
+        bottom: { style: 'thin', color: { rgb: C.border } },
+        left: { style: 'thin', color: { rgb: C.border } },
+        right: { style: 'thin', color: { rgb: C.border } }
+      };
+      const numberFormat = '#,##0.##;[Red](#,##0.##);-';
+      const integerFormat = '#,##0;[Red](#,##0);-';
+      const headerWords = /(no\.?|nomor|kategori|nama barang|barang|item|qty|jumlah|sistem|hasil so|selisih|batch|lokasi|rak|petugas|keterangan|tanggal|periode|cabang|branch|satuan|unit|status|tren|analisa|checker|user|waktu|aksi|nilai|harga|total|meter|akurasi|persentase)/i;
+
+      workbook.SheetNames.forEach(sheetName => {
+        const ws = workbook.Sheets[sheetName];
+        if (!ws || !ws['!ref']) return;
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        const rowCount = range.e.r - range.s.r + 1;
+        const colCount = range.e.c - range.s.c + 1;
+        if (!rowCount || !colCount) return;
+
+        // Cari baris header tabel, menghindari judul workbook yang biasanya merge.
+        let headerRow = range.s.r;
+        let bestScore = -1;
+        const scanEnd = Math.min(range.e.r, range.s.r + 8);
+        for (let r = range.s.r; r <= scanEnd; r++) {
+          let populated = 0, textCount = 0, keywordCount = 0;
+          for (let c = range.s.c; c <= range.e.c; c++) {
+            const cell = ws[XLSX.utils.encode_cell({ r, c })];
+            if (!cell || cell.v === undefined || cell.v === null || cell.v === '') continue;
+            populated++;
+            if (typeof cell.v === 'string') {
+              textCount++;
+              if (headerWords.test(cell.v.trim())) keywordCount++;
+            }
+          }
+          const score = populated * 2 + textCount + keywordCount * 3;
+          if (populated >= 2 && score > bestScore) {
+            bestScore = score;
+            headerRow = r;
+          }
+        }
+
+        // Format seluruh area tabel dengan font, alignment, border dan zebra.
+        for (let r = range.s.r; r <= range.e.r; r++) {
+          for (let c = range.s.c; c <= range.e.c; c++) {
+            const addr = XLSX.utils.encode_cell({ r, c });
+            const cell = ws[addr];
+            if (!cell) continue;
+            const old = cell.s || {};
+            const oldFont = old.font || {};
+            const oldAlignment = old.alignment || {};
+            const oldBorder = old.border || {};
+            const isHeader = r === headerRow;
+            const isTitle = r === range.s.r && r < headerRow;
+            const isData = r > headerRow;
+            const fillColor = isHeader ? C.blue : (isTitle ? C.navy : (isData && (r - headerRow) % 2 === 0 ? C.pale : C.white));
+            cell.s = {
+              ...old,
+              font: {
+                name: 'Aptos',
+                sz: isTitle ? 14 : (isHeader ? 10 : 10),
+                color: { rgb: (isTitle || isHeader) ? C.white : C.ink },
+                ...(isTitle || isHeader ? { bold: true } : {}),
+                ...oldFont
+              },
+              fill: old.fill || { patternType: 'solid', fgColor: { rgb: fillColor } },
+              alignment: {
+                vertical: 'center',
+                wrapText: true,
+                horizontal: (typeof cell.v === 'number' ? 'right' : 'left'),
+                ...oldAlignment,
+                ...(isHeader ? { horizontal: 'center', vertical: 'center', wrapText: true } : {}),
+                ...(isTitle ? { horizontal: 'center', vertical: 'center', wrapText: true } : {})
+              },
+              border: { ...thinBorder, ...oldBorder }
+            };
+
+            if (typeof cell.v === 'number' && !isHeader && !isTitle && !cell.z) {
+              const headerCell = ws[XLSX.utils.encode_cell({ r: headerRow, c })];
+              const label = String(headerCell?.v || '').trim().toLowerCase();
+              cell.z = /(^no\.?$|^nomor$|^id$)/i.test(label) ? integerFormat : numberFormat;
+            }
+          }
+        }
+
+        // Header dengan warna navy-biru dan judul laporan yang tegas.
+        if (headerRow >= range.s.r) {
+          for (let c = range.s.c; c <= range.e.c; c++) {
+            const addr = XLSX.utils.encode_cell({ r: headerRow, c });
+            const cell = ws[addr];
+            if (!cell) continue;
+            cell.s = {
+              ...(cell.s || {}),
+              font: { name: 'Aptos', sz: 10, bold: true, color: { rgb: C.white }, ...((cell.s || {}).font || {}) },
+              fill: { patternType: 'solid', fgColor: { rgb: C.blue } },
+              alignment: { horizontal: 'center', vertical: 'center', wrapText: true, ...((cell.s || {}).alignment || {}) },
+              border: { ...thinBorder, ...((cell.s || {}).border || {}) }
+            };
+          }
+          ws['!rows'] = ws['!rows'] || [];
+          ws['!rows'][headerRow] = { ...(ws['!rows'][headerRow] || {}), hpt: Math.max(ws['!rows'][headerRow]?.hpt || 0, 30) };
+        }
+
+        // Tinggi judul dan baris isi dibuat nyaman dibaca.
+        if (headerRow > range.s.r) {
+          ws['!rows'] = ws['!rows'] || [];
+          ws['!rows'][range.s.r] = { ...(ws['!rows'][range.s.r] || {}), hpt: Math.max(ws['!rows'][range.s.r]?.hpt || 0, 28) };
+        }
+        ws['!rows'] = ws['!rows'] || [];
+        for (let r = headerRow + 1; r <= range.e.r; r++) {
+          ws['!rows'][r] = { ...(ws['!rows'][r] || {}), hpt: Math.max(ws['!rows'][r]?.hpt || 0, 21) };
+        }
+
+        // Lebar kolom otomatis secukupnya, tanpa menimpa pengaturan khusus yang sudah ada.
+        ws['!cols'] = ws['!cols'] || [];
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          if (ws['!cols'][c]) continue;
+          let maxLen = 10;
+          for (let r = range.s.r; r <= Math.min(range.e.r, headerRow + 80); r++) {
+            const cell = ws[XLSX.utils.encode_cell({ r, c })];
+            if (cell && cell.v !== undefined && cell.v !== null) {
+              maxLen = Math.max(maxLen, String(cell.v).split('\n')[0].length);
+            }
+          }
+          ws['!cols'][c] = { wch: Math.min(42, Math.max(10, maxLen + 2)) };
+        }
+
+        // Bekukan judul/header dan aktifkan filter pada tabel.
+        ws['!views'] = [{ ...(ws['!views']?.[0] || {}), state: 'frozen', ySplit: headerRow + 1, xSplit: Math.min(2, colCount), topLeftCell: XLSX.utils.encode_cell({ r: headerRow + 1, c: Math.min(2, colCount) }), showGridLines: false }];
+        if (range.e.r > headerRow && colCount > 1) {
+          ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: headerRow, c: range.s.c }, e: { r: range.e.r, c: range.e.c } }) };
+        }
+        ws['!pageSetup'] = { ...(ws['!pageSetup'] || {}), orientation: colCount > 6 ? 'landscape' : 'portrait', fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
+        ws['!margins'] = { left: 0.25, right: 0.25, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2, ...(ws['!margins'] || {}) };
+      });
+    }
+
     function exportAnalysisAuditLog() {
       if(typeof XLSX==='undefined'){showToast('Library Excel sedang dimuat, coba sesaat lagi.',false);return;}
       if(!analysisAuditLogs.length){showToast('Belum ada log analisa untuk diekspor.',false);return;}
       const rows=analysisAuditLogs.map(log=>({'Waktu':formatAnalysisLogTime(log.timestamp),'Aktivitas':log.activity||'','Status':log.status||'','User':log.user||'','Divisi':log.division||'','Gudang':log.warehouse||'','Tanggal Data SO':log.systemDate||'','Jumlah Kandidat':log.candidateCount??'','Ambang Akurasi (%)':log.accuracyThreshold??'','Pasangan Barang':log.items||'','Catatan':log.note||'','Detail JSON':JSON.stringify(log.pairs||[])}));
       const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'LOG ANALISA');
+      applyProfessionalExcelDesign(wb);
       XLSX.writeFile(wb,`LOG_ANALISA_SO_MBG_${new Date().toISOString().slice(0,10)}.xlsx`); showToast(`Export ${rows.length} log analisa berhasil.`);
     }
 
@@ -4758,6 +4926,7 @@
       const ws = XLSX.utils.json_to_sheet(rows);
       XLSX.utils.book_append_sheet(wb, ws, 'Rekomendasi Adjustment');
       const stamp = new Date().toISOString().slice(0, 10);
+      applyProfessionalExcelDesign(wb);
       XLSX.writeFile(wb, `Rekomendasi_Adjustment_SO_MBG_${stamp}.xlsx`);
       showToast(`Export ${rows.length} rekomendasi adjustment berhasil!`);
     }
@@ -5848,6 +6017,7 @@
 
       const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `MBG_History_Peruser_Rak_${selectedUser}_${today}.xlsx`;
+      applyProfessionalExcelDesign(wb);
       XLSX.writeFile(wb, fileName);
       showToast(`File Excel ${fileName} berhasil diunduh!`);
     }
@@ -6402,6 +6572,19 @@
     }
 
     // Render items list for View 1
+    function getSelectedArchiveHistoryItem(currentItem) {
+      if (!selectedCountArchiveHistoryId || !currentItem || !Array.isArray(soArchives)) return null;
+      const archive = soArchives.find(a => String(a.archiveId || '') === String(selectedCountArchiveHistoryId));
+      if (!archive || !Array.isArray(archive.items)) return null;
+      const normalized = archive.items.map(normalizeArchiveItemEntry).filter(Boolean);
+      let match = normalized.find(it => Number(it.id) === Number(currentItem.id));
+      if (!match) {
+        const key = String(currentItem.name || '').trim().replace(/\s+/g, ' ').toUpperCase();
+        if (key) match = normalized.find(it => String(it.name || '').trim().replace(/\s+/g, ' ').toUpperCase() === key);
+      }
+      return match ? { archive, item: match } : null;
+    }
+
     function renderItems() {
       const filtered = getFilteredItems();
       const totalFiltered = filtered.length;
@@ -6552,6 +6735,23 @@
               <div class="text-[10px] text-slate-500">${!isCounted ? '-' : (pSize > 1 ? formatDusSummary(item, diffQty) : 'pcs')}</div>
             </div>
           </div>
+
+          ${(() => {
+            const history = getSelectedArchiveHistoryItem(item);
+            if (!history) return '';
+            const h = history.item;
+            const archiveDate = formatCountArchiveDisplayName(history.archive);
+            const hDiff = Number(h.diffQty) || 0;
+            const hDiffColor = Math.abs(hDiff) < 0.001 ? 'text-emerald-700 dark:text-emerald-300' : (hDiff > 0 ? 'text-sky-700 dark:text-sky-300' : 'text-rose-700 dark:text-rose-300');
+            return `<div class="mt-1.5 mb-2 rounded-lg border border-slate-200/80 dark:border-slate-600/70 bg-slate-50/90 dark:bg-slate-700/25 px-2 py-1.5">
+              <div class="flex items-center justify-between gap-2 mb-1"><span class="text-[8px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">History SO</span><span class="text-[8px] font-semibold text-slate-400 dark:text-slate-500 truncate">${escapeHtml(archiveDate)}</span></div>
+              <div class="grid grid-cols-3 gap-1 text-center leading-tight">
+                <div><span class="block text-[8px] text-slate-400">Sistem</span><b class="text-[9px] text-slate-600 dark:text-slate-300 tabular-nums">${fmtNum(h.sysQty)}</b></div>
+                <div class="border-x border-slate-200 dark:border-slate-600"><span class="block text-[8px] text-slate-400">Fisik</span><b class="text-[9px] text-slate-600 dark:text-slate-300 tabular-nums">${h.isCounted ? fmtNum(h.countQty) : 'Belum SO'}</b></div>
+                <div><span class="block text-[8px] text-slate-400">Selisih</span><b class="text-[9px] ${hDiffColor} tabular-nums">${hDiff > 0 ? '+' : ''}${fmtNum(hDiff)}</b></div>
+              </div>
+            </div>`;
+          })()}
 
           ${locContent}
 
@@ -7843,6 +8043,7 @@
 
       const safeDate = sysDateLabel.replace(/[^a-zA-Z0-9]+/g, '_');
       const fileName = `MBG_SO_${whLabel}_${safeDate}_HASIL.xlsx`;
+      applyProfessionalExcelDesign(wb);
       XLSX.writeFile(wb, fileName);
       showToast(`File Excel SO (${countedTotalItems} item terhitung + Berita Acara) berhasil diunduh!`);
     }
@@ -8210,6 +8411,22 @@
       }
     }
 
+    function isAndriArchiveSaver() {
+      return isAuthenticatedSession === true && String(syncConfig.checker || '').trim().toUpperCase() === 'ANDRI';
+    }
+
+    function updateArchiveSavePermissionUI() {
+      const allowed = isAndriArchiveSaver();
+      ['btnSaveArchiveQuick', 'btnRecordSoSnapshot'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.classList.toggle('hidden', !allowed);
+        btn.disabled = !allowed;
+        btn.setAttribute('aria-hidden', allowed ? 'false' : 'true');
+        btn.title = allowed ? 'Hanya ANDRI yang dapat menyimpan arsip SO' : 'Fitur simpan arsip hanya tersedia untuk ANDRI';
+      });
+    }
+
     function saveSoArchivesToLocal() {
       try {
         localStorage.setItem(SO_ARCHIVE_KEY, JSON.stringify(soArchives));
@@ -8311,6 +8528,7 @@
     }
 
     async function recordCurrentSoToArchive() {
+      if (!isAndriArchiveSaver()) { showToast('Akses ditolak. Hanya ANDRI yang dapat menyimpan arsip SO.', false); return; }
       const inputEl = document.getElementById('inputArchivePeriodLabel');
       const customLabel = inputEl ? inputEl.value.trim() : '';
       const snapshot = buildCurrentBranchSnapshot(customLabel);
@@ -8373,6 +8591,8 @@
           saveSoArchivesToLocal();
           syncBranchDropdownOptions();
           if (currentRecapSubTab === 'archive_compare') renderArchiveAndComparisonView();
+          const historyViewer = document.getElementById('countArchiveHistoryViewer');
+          if (historyViewer && !historyViewer.classList.contains('hidden')) renderCountArchiveHistoryOptions(selectedCountArchiveHistoryId);
           if (manual) showToast(`Sinkronisasi arsip selesai (${soArchives.length} rekaman).`);
         }
       } catch (e) {
@@ -8432,6 +8652,7 @@
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'ARSIP_SO');
       const safeP = String(arc.periodLabel || 'SO').replace(/[^a-zA-Z0-9]+/g, '_');
+      applyProfessionalExcelDesign(wb);
       XLSX.writeFile(wb, `ARSIP_SO_${arc.branch}_${safeP}.xlsx`);
       showToast(`File Excel Arsip ${arc.branch} (${arc.periodLabel}) diunduh!`);
     }
@@ -8653,6 +8874,129 @@
         resolvedCount,
         rows
       };
+    }
+
+    function formatCountArchiveDisplayName(archive) {
+      const branch = String(archive?.branch || '-').trim().toUpperCase();
+      const rawDate = String(archive?.periodLabel || archive?.savedAt || '').trim();
+      let dateText = '';
+      const parsed = rawDate ? new Date(rawDate) : (archive?.timestamp ? new Date(Number(archive.timestamp)) : null);
+      if (parsed && !Number.isNaN(parsed.getTime())) {
+        dateText = parsed.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+      } else if (rawDate) {
+        dateText = rawDate.replace(/\s+\d{2}:\d{2}:\d{2}.*$/, '').replace(/\s*GMT[+-]\d{4}.*$/i, '').trim();
+      }
+      return `${branch} - ${dateText || 'Tanggal tidak tersedia'}`;
+    }
+
+    function renderCountArchiveHistoryPicker(sortedArchives = soArchives) {
+      const nativeSel = document.getElementById('countArchiveHistorySelect');
+      const label = document.getElementById('countArchiveHistoryPickerLabel');
+      const options = document.getElementById('countArchiveHistoryPickerOptions');
+      if (!nativeSel || !options || !label) return;
+      const selected = sortedArchives.find(a => a.archiveId === (nativeSel.value || selectedCountArchiveHistoryId));
+      label.textContent = selected ? formatCountArchiveDisplayName(selected) : '-- Pilih arsip SO --';
+      const query = (document.getElementById('countArchiveHistoryPickerSearch')?.value || '').trim().toLowerCase();
+      const visible = sortedArchives.filter(a => !query || formatCountArchiveDisplayName(a).toLowerCase().includes(query));
+      options.innerHTML = visible.length ? visible.map(a => {
+        const isSelected = a.archiveId === (nativeSel.value || selectedCountArchiveHistoryId);
+        const count = Number(a.countedItems || (Array.isArray(a.items) ? a.items.length : 0));
+        return `<button type="button" data-archive-id="${escapeHtml(a.archiveId || '')}" class="w-full flex items-center justify-between gap-3 px-3 py-3 rounded-lg text-left ${isSelected ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-200' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}">
+          <span class="min-w-0"><span class="block text-xs font-extrabold truncate">${escapeHtml(formatCountArchiveDisplayName(a))}</span><span class="block mt-0.5 text-[10px] font-normal text-slate-500 dark:text-slate-400">${escapeHtml(String(count))} item · ${escapeHtml(a.savedBy || 'ADMIN')}</span></span>
+          <span class="shrink-0 text-[10px] font-bold ${isSelected ? 'text-indigo-600 dark:text-indigo-300' : 'text-slate-400'}">${isSelected ? '✓ Dipilih' : 'Pilih'}</span>
+        </button>`;
+      }).join('') : '<div class="px-3 py-5 text-center text-xs font-normal text-slate-400">Arsip tidak ditemukan.</div>';
+    }
+
+    function renderCountArchiveHistoryOptions(preferredId = '') {
+      const sel = document.getElementById('countArchiveHistorySelect');
+      if (!sel) return;
+      const previous = preferredId || selectedCountArchiveHistoryId || sel.value;
+      const sorted = soArchives.slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      sel.innerHTML = '<option value="">-- Pilih arsip SO --</option>' + sorted.map(a => {
+        const label = formatCountArchiveDisplayName(a);
+        return `<option value="${escapeHtml(a.archiveId || '')}">${escapeHtml(label)}</option>`;
+      }).join('');
+      if (previous && sorted.some(a => a.archiveId === previous)) sel.value = previous;
+      else if (sorted.length) sel.value = sorted[0].archiveId;
+      selectedCountArchiveHistoryId = sel.value || '';
+      renderCountArchiveHistoryPicker(sorted);
+      if (selectedCountArchiveHistoryId) renderSelectedCountArchiveHistory();
+      else {
+        const content = document.getElementById('countArchiveHistoryContent');
+        const empty = document.getElementById('countArchiveHistoryEmpty');
+        if (content) content.classList.add('hidden');
+        if (empty) { empty.classList.remove('hidden'); empty.textContent = 'Belum ada arsip SO yang tersedia.'; }
+        if (typeof renderItems === 'function') renderItems();
+      }
+    }
+
+    function renderSelectedCountArchiveHistory() {
+      const sel = document.getElementById('countArchiveHistorySelect');
+      const archiveId = sel?.value || selectedCountArchiveHistoryId;
+      const arc = soArchives.find(a => a.archiveId === archiveId);
+      const content = document.getElementById('countArchiveHistoryContent');
+      const empty = document.getElementById('countArchiveHistoryEmpty');
+      if (!arc) {
+        selectedCountArchiveHistoryId = '';
+        if (content) content.classList.add('hidden');
+        if (empty) { empty.classList.remove('hidden'); empty.textContent = 'Pilih arsip SO untuk menampilkan hasil historis pada setiap barang.'; }
+        if (typeof renderItems === 'function') renderItems();
+        return;
+      }
+      selectedCountArchiveHistoryId = archiveId;
+      const items = (Array.isArray(arc.items) ? arc.items : []).map(normalizeArchiveItemEntry).filter(Boolean);
+      const counted = items.filter(it => it.isCounted).length;
+      const totalSys = Number(arc.totalSysQty) || items.reduce((n, it) => n + it.sysQty, 0);
+      const totalFisik = Number(arc.totalFisikQty) || items.reduce((n, it) => n + (it.countQty || 0), 0);
+      const totalDiff = Number(arc.netDiffQty) || (totalFisik - totalSys);
+      const meta = document.getElementById('countArchiveHistoryMeta');
+      if (meta) meta.textContent = `${formatCountArchiveDisplayName(arc)} · Disimpan ${arc.savedAt || (arc.timestamp ? new Date(arc.timestamp).toLocaleString('id-ID') : '-')} · ${arc.savedBy || '-'}`;
+      const metrics = document.getElementById('countArchiveHistoryMetrics');
+      if (metrics) {
+        const cards = [
+          ['Item', fmtNum(arc.countedItems ?? counted)],
+          ['Sistem', fmtNum(totalSys)],
+          ['Hasil SO', fmtNum(totalFisik)],
+          ['Selisih', `${totalDiff > 0 ? '+' : ''}${fmtNum(totalDiff)}`]
+        ];
+        metrics.innerHTML = cards.map(([label, value]) => `<span class="whitespace-nowrap"><span class="text-slate-500 dark:text-slate-400">${label}:</span> <b class="text-slate-900 dark:text-white tabular-nums">${value}</b></span>`).join('<span class="text-indigo-200 dark:text-indigo-800">|</span>');
+      }
+      const search = (document.getElementById('countArchiveHistorySearch')?.value || '').trim().toLowerCase();
+      const filtered = items.filter(it => !search || [it.id, it.cat, it.name, it.batch, it.loc, it.checker, it.ket].some(v => String(v ?? '').toLowerCase().includes(search)));
+      const tbody = document.getElementById('countArchiveHistoryTableBody');
+      if (tbody) tbody.innerHTML = filtered.map((it, idx) => {
+        const diff = Number(it.diffQty) || 0;
+        const diffCls = Math.abs(diff) < 0.001 ? 'text-emerald-600 dark:text-emerald-400' : (diff > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-rose-600 dark:text-rose-400');
+        return `<tr class="hover:bg-indigo-50/50 dark:hover:bg-slate-700/40"><td class="p-2 font-semibold">${escapeHtml(it.id || idx + 1)}</td><td class="p-2">${escapeHtml(it.cat || '-')}</td><td class="p-2 font-semibold text-slate-800 dark:text-slate-100">${escapeHtml(it.name || '-')}</td><td class="p-2 text-right tabular-nums">${fmtNum(it.sysQty)}</td><td class="p-2 text-right tabular-nums font-bold">${it.isCounted ? fmtNum(it.countQty) : '<span class="text-slate-400">Belum dihitung</span>'}</td><td class="p-2 text-right tabular-nums font-extrabold ${diffCls}">${diff > 0 ? '+' : ''}${fmtNum(diff)}</td><td class="p-2">${escapeHtml(it.batch || '-')}</td><td class="p-2">${escapeHtml(it.loc || '-')}</td><td class="p-2">${escapeHtml(it.checker || '-')}</td><td class="p-2 whitespace-normal">${escapeHtml(it.ket || '-')}</td></tr>`;
+      }).join('') || '<tr><td colspan="10" class="p-5 text-center text-slate-400">Tidak ada item yang sesuai pencarian.</td></tr>';
+      const foot = document.getElementById('countArchiveHistoryFoot');
+      if (foot) foot.textContent = `${fmtNum(items.length)} item arsip · hanya baca`;
+      const details = document.getElementById('countArchiveHistoryDetails');
+      if (details && !details.dataset.userOpened) details.classList.add('hidden');
+      const detailBtn = document.getElementById('btnToggleCountArchiveHistoryDetails');
+      if (detailBtn) detailBtn.textContent = details && !details.classList.contains('hidden') ? 'Tutup rincian' : 'Lihat rincian';
+      if (content) content.classList.remove('hidden');
+      if (empty) empty.classList.add('hidden');
+      // Riwayat terpilih ditampilkan sebagai strip kecil di bawah angka tiap kartu barang.
+      if (typeof renderItems === 'function') renderItems();
+    }
+
+    async function openCountArchiveHistory() {
+      const viewer = document.getElementById('countArchiveHistoryViewer');
+      const btn = document.getElementById('btnToggleCountArchiveHistory');
+      if (viewer) viewer.classList.remove('hidden');
+      if (btn) btn.textContent = 'Sembunyikan Riwayat';
+      renderCountArchiveHistoryOptions();
+      if (syncConfig.url) await fetchArchivesFromSheet(false);
+      renderCountArchiveHistoryOptions(selectedCountArchiveHistoryId);
+    }
+
+    function closeCountArchiveHistory() {
+      const viewer = document.getElementById('countArchiveHistoryViewer');
+      const btn = document.getElementById('btnToggleCountArchiveHistory');
+      if (viewer) viewer.classList.add('hidden');
+      if (btn) btn.textContent = 'Lihat Riwayat SO';
     }
 
     function renderArchiveAndComparisonView() {
@@ -8922,6 +9266,7 @@
       ws['!cols'] = [{ wch: 6 }, { wch: 13 }, { wch: 42 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 28 }];
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'PERBANDINGAN_SELISIH');
+      applyProfessionalExcelDesign(wb);
       XLSX.writeFile(wb, `PERBANDINGAN_SELISIH_SO_${cmp.branch}_${new Date().toISOString().slice(0, 10)}.xlsx`);
       showToast('File Excel Perbandingan History Selisih berhasil diunduh!');
     }
@@ -9267,6 +9612,7 @@
       }
       isAuthenticatedSession = false;
       syncConfig.checker = '';
+      updateArchiveSavePermissionUI();
       syncConfig.division = '';
       updateOnlineUsersUI();
       saveSyncConfig();
@@ -10031,13 +10377,47 @@
         }
       });
       document.getElementById('btnSaveArchiveQuick').addEventListener('click', () => {
+        if (!isAndriArchiveSaver()) { showToast('Hanya ANDRI yang dapat menyimpan arsip SO.', false); return; }
         switchMainView('recap');
         switchRecapSubTab('archive_compare');
         const inp = document.getElementById('inputArchivePeriodLabel');
         if (inp && !inp.value) inp.value = syncConfig.systemDate || '';
         recordCurrentSoToArchive();
       });
-      document.getElementById('btnRecordSoSnapshot').addEventListener('click', recordCurrentSoToArchive);
+      document.getElementById('btnRecordSoSnapshot').addEventListener('click', () => { if (isAndriArchiveSaver()) recordCurrentSoToArchive(); else showToast('Hanya ANDRI yang dapat menyimpan arsip SO.', false); });
+      // History ditampilkan inline di bawah angka hitungan setiap kartu barang.
+      document.getElementById('btnRefreshCountArchiveHistory').addEventListener('click', async () => {
+        if (syncConfig.url) await fetchArchivesFromSheet(true);
+        renderCountArchiveHistoryOptions(selectedCountArchiveHistoryId);
+      });
+      document.getElementById('countArchiveHistorySelect').addEventListener('change', (e) => { selectedCountArchiveHistoryId = e.target.value; renderCountArchiveHistoryPicker(); renderSelectedCountArchiveHistory(); });
+      document.getElementById('countArchiveHistoryPickerButton').addEventListener('click', () => {
+        const menu = document.getElementById('countArchiveHistoryPickerMenu');
+        const button = document.getElementById('countArchiveHistoryPickerButton');
+        const opening = menu.classList.contains('hidden');
+        menu.classList.toggle('hidden', !opening);
+        button.setAttribute('aria-expanded', opening ? 'true' : 'false');
+        if (opening) { renderCountArchiveHistoryPicker(); document.getElementById('countArchiveHistoryPickerSearch')?.focus(); }
+      });
+      document.getElementById('countArchiveHistoryPickerOptions').addEventListener('click', (e) => {
+        const option = e.target.closest('[data-archive-id]');
+        if (!option) return;
+        const id = option.getAttribute('data-archive-id') || '';
+        const sel = document.getElementById('countArchiveHistorySelect');
+        if (sel) sel.value = id;
+        selectedCountArchiveHistoryId = id;
+        document.getElementById('countArchiveHistoryPickerMenu').classList.add('hidden');
+        document.getElementById('countArchiveHistoryPickerButton').setAttribute('aria-expanded', 'false');
+        renderCountArchiveHistoryPicker();
+        renderSelectedCountArchiveHistory();
+      });
+      document.getElementById('countArchiveHistoryPickerSearch').addEventListener('input', () => renderCountArchiveHistoryPicker());
+      document.addEventListener('click', (e) => {
+        const picker = document.getElementById('countArchiveHistoryPicker');
+        const menu = document.getElementById('countArchiveHistoryPickerMenu');
+        const button = document.getElementById('countArchiveHistoryPickerButton');
+        if (picker && menu && !picker.contains(e.target)) { menu.classList.add('hidden'); button?.setAttribute('aria-expanded', 'false'); }
+      });
       document.getElementById('btnSyncArchivesSheet').addEventListener('click', () => fetchArchivesFromSheet(true));
       document.getElementById('archiveBranchFilter').addEventListener('change', renderArchiveAndComparisonView);
       document.getElementById('compareBranchSelect').addEventListener('change', (e) => {
@@ -10411,6 +10791,7 @@
         // sehingga error pada komponen lain tidak membuat tombol login tampak diam.
         isAuthenticatedSession = true;
         syncConfig.checker = cleanUser;
+        updateArchiveSavePermissionUI();
         syncConfig.division = String(uDiv || '').trim();
         saveLastLoginProfile(cleanUser, chosenBranch, syncConfig.division);
         if (!Array.isArray(syncConfig.branchList)) syncConfig.branchList = [...DEFAULT_BRANCHES];
@@ -10687,6 +11068,7 @@
 
       document.getElementById('btnSaveSyncConfig').addEventListener('click', () => {
         syncConfig.checker = document.getElementById('inputCheckerName').value.trim().toUpperCase();
+        updateArchiveSavePermissionUI();
         syncConfig.division = document.getElementById('inputCheckerDivision').value.trim();
         const rawList = document.getElementById('inputBranchList').value.trim().toUpperCase();
         if (rawList) {
@@ -12534,7 +12916,8 @@ function doPost(e) {
         ws['!cols'] = [{ wch: 6 }, { wch: 48 }, { wch: 12 }];
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Database Barang');
-        XLSX.writeFile(wb, `Database_Barang_MBG_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        applyProfessionalExcelDesign(wb);
+      XLSX.writeFile(wb, `Database_Barang_MBG_${new Date().toISOString().slice(0, 10)}.xlsx`);
         showToast('Excel Database Barang diunduh!');
       });
 
@@ -13198,6 +13581,8 @@ function doPost(e) {
         });
       }
     })();
-  </script>
+  
+    try { updateArchiveSavePermissionUI(); } catch (e) {}
+</script>
 </body>
 </html>
