@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="MBG SO Mobile" />
-  <meta name="mbg-app-version" content="26.11.62" />
+  <meta name="mbg-app-version" content="26.11.63" />
   <link id="pwaManifestLink" rel="manifest" href="" />
   <link id="pwaAppleIcon" rel="apple-touch-icon" href="" />
   <link id="pwaFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%231e3a8a'/%3E%3Ctext x='96' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='56' fill='%23ffffff'%3ENII%3C/text%3E%3Ctext x='96' y='142' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='40' fill='%2393c5fd'%3ESO%3C/text%3E%3C/svg%3E" />
@@ -314,77 +314,83 @@
     <div id="viewCount" class="flex flex-col gap-3">
       
       <!-- KPI SUMMARY DASHBOARD (Collapsible) -->
-      <section id="dashboardPanel" class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 transition-all space-y-3">
+      <section id="dashboardPanel" class="bg-white dark:bg-slate-800 rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-200 dark:border-slate-700 transition-all space-y-2.5">
         <!-- Header Ringkasan + Mode SO Badge + Progress -->
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2">
-            <span class="p-1.5 bg-blue-50 dark:bg-blue-900/40 text-brand-600 dark:text-blue-400 rounded-lg">
+        <div class="flex flex-wrap items-center justify-between gap-1.5">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="p-1.5 bg-blue-50 dark:bg-blue-900/40 text-brand-600 dark:text-blue-400 rounded-lg shrink-0">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
               </svg>
             </span>
-            <div>
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <h2 class="font-bold text-sm text-slate-800 dark:text-slate-100">Ringkasan Stock Opname</h2>
-                <span id="soScopeModeBadge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 border border-indigo-200/80 dark:border-indigo-700/70">SO FULL (SEMUA KATEGORI)</span>
-              </div>
+            <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+              <h2 class="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100">Ringkasan Stock Opname</h2>
+              <span id="soScopeModeBadge" class="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 border border-indigo-200/80 dark:border-indigo-700/70">SO FULL (SEMUA KATEGORI)</span>
             </div>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5 shrink-0">
             <button id="btnOpenUserLog" class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-[10px] font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1 transition" title="Lihat Log Inputan User">
-              <svg class="w-3.5 h-3.5 text-brand-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-3 h-3 text-brand-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
               <span>Log User</span>
             </button>
-            <div class="text-xs font-semibold text-brand-600 dark:text-blue-400" id="statProgressText">
-              0 / 923 Item (0%)
+            <div class="text-[11px] sm:text-xs font-semibold text-brand-600 dark:text-blue-400" id="statProgressText">
+              0 / 921 Item (0%)
             </div>
           </div>
         </div>
 
-        <!-- 2. CEKLIST KATEGORI BARANG YANG DI-SO (Kosong = Otomatis SO Full) -->
-        <div class="bg-slate-50/90 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 space-y-2">
-          <div class="flex flex-wrap items-center justify-between gap-1.5">
-            <span class="text-[11px] font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+        <!-- CEKLIST KATEGORI BARANG YANG DI-SO (Kosong = Otomatis SO Full) -->
+        <div class="bg-slate-50/90 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-200/80 dark:border-slate-700/80 space-y-1.5">
+          <div class="flex flex-wrap items-center justify-between gap-1">
+            <span class="text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1 flex-wrap">
               <span>☑️ Target Kategori SO:</span>
-              <span id="soCategoryChecklistHint" class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Tidak ada ceklist dipilih → Otomatis SO Full</span>
+              <span id="soCategoryChecklistHint" class="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400">Tidak ada ceklist dipilih → Otomatis SO Full</span>
             </span>
-            <button type="button" id="btnResetSoCategoryChecklist" class="hidden px-2 py-0.5 rounded-lg bg-slate-200/90 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-[10px] font-extrabold text-slate-700 dark:text-slate-200 transition">
+            <button type="button" id="btnResetSoCategoryChecklist" class="hidden px-2 py-0.5 rounded-lg bg-slate-200/90 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-[9px] sm:text-[10px] font-extrabold text-slate-700 dark:text-slate-200 transition">
               Reset ke SO Full
             </button>
           </div>
-          <div id="soCategoryChecklistGroup" class="flex flex-wrap items-center gap-1.5 text-[11px]">
-            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-sky-200 dark:border-sky-800/70 bg-sky-50/70 dark:bg-sky-950/40 text-sky-800 dark:text-sky-200 font-bold transition" data-cat-key="ACP">
-              <input type="checkbox" value="ACP" class="so-cat-checkbox rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5" />
+          <div id="soCategoryChecklistGroup" class="flex flex-wrap items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px]">
+            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-sky-200 dark:border-sky-800/70 bg-sky-50/70 dark:bg-sky-950/40 text-sky-800 dark:text-sky-200 font-bold transition" data-cat-key="ACP">
+              <input type="checkbox" value="ACP" class="so-cat-checkbox rounded text-sky-600 focus:ring-sky-500 w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span>ACP</span>
             </label>
-            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800/70 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 font-bold transition" data-cat-key="Sealant">
-              <input type="checkbox" value="Sealant" class="so-cat-checkbox rounded text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5" />
+            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-emerald-200 dark:border-emerald-800/70 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 font-bold transition" data-cat-key="Sealant">
+              <input type="checkbox" value="Sealant" class="so-cat-checkbox rounded text-emerald-600 focus:ring-emerald-500 w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span>Sealant</span>
             </label>
-            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-amber-200 dark:border-amber-800/70 bg-amber-50/70 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 font-bold transition" data-cat-key="Sunsulate">
-              <input type="checkbox" value="Sunsulate" class="so-cat-checkbox rounded text-amber-600 focus:ring-amber-500 w-3.5 h-3.5" />
+            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-amber-200 dark:border-amber-800/70 bg-amber-50/70 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 font-bold transition" data-cat-key="Sunsulate">
+              <input type="checkbox" value="Sunsulate" class="so-cat-checkbox rounded text-amber-600 focus:ring-amber-500 w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span>Sunsulate</span>
             </label>
-            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-purple-200 dark:border-purple-800/70 bg-purple-50/70 dark:bg-purple-950/40 text-purple-800 dark:text-purple-200 font-bold transition" data-cat-key="Rooftop">
-              <input type="checkbox" value="Rooftop" class="so-cat-checkbox rounded text-purple-600 focus:ring-purple-500 w-3.5 h-3.5" />
+            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-cyan-200 dark:border-cyan-800/70 bg-cyan-50/70 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-200 font-bold transition" data-cat-key="Godia">
+              <input type="checkbox" value="Godia" class="so-cat-checkbox rounded text-cyan-600 focus:ring-cyan-500 w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              <span>Godia</span>
+            </label>
+            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-purple-200 dark:border-purple-800/70 bg-purple-50/70 dark:bg-purple-950/40 text-purple-800 dark:text-purple-200 font-bold transition" data-cat-key="Rooftop">
+              <input type="checkbox" value="Rooftop" class="so-cat-checkbox rounded text-purple-600 focus:ring-purple-500 w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span>Rooftop</span>
             </label>
-            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-rose-200 dark:border-rose-800/70 bg-rose-50/70 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 font-bold transition" data-cat-key="Accessories">
-              <input type="checkbox" value="Accessories" class="so-cat-checkbox rounded text-rose-600 focus:ring-rose-500 w-3.5 h-3.5" />
+            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-rose-200 dark:border-rose-800/70 bg-rose-50/70 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 font-bold transition" data-cat-key="Accessories">
+              <input type="checkbox" value="Accessories" class="so-cat-checkbox rounded text-rose-600 focus:ring-rose-500 w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span>Accessories</span>
+            </label>
+            <label id="soCatLabelOthers" class="hidden so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-100/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold transition" data-cat-key="Lainnya">
+              <input type="checkbox" value="Lainnya" class="so-cat-checkbox rounded text-slate-600 focus:ring-slate-500 w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              <span>Lain-lain</span>
             </label>
           </div>
         </div>
 
-        <!-- Metric Grid Keseluruhan (Sesuai Scope Ceklist Aktif) -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-          <div class="bg-slate-50 dark:bg-slate-700/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
-            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Total QTY SO (Fisik)</span>
+        <!-- Metric Grid Keseluruhan (Ringkas 2 Kolom di HP, 4 Kolom di Layar Lebar) -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div class="bg-slate-50 dark:bg-slate-700/50 p-2 sm:p-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
+            <span class="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Total QTY SO (Fisik)</span>
             <div class="flex items-baseline gap-1 mt-0.5">
-              <span class="text-lg font-bold text-slate-900 dark:text-white" id="statQtyFisik">0</span>
+              <span class="text-base sm:text-lg font-bold text-slate-900 dark:text-white" id="statQtyFisik">0</span>
               <span class="text-[10px] text-slate-400">pcs</span>
             </div>
             <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -392,10 +398,10 @@
             </div>
           </div>
 
-          <div class="bg-slate-50 dark:bg-slate-700/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
-            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Selisih (SO - Sistem)</span>
+          <div class="bg-slate-50 dark:bg-slate-700/50 p-2 sm:p-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
+            <span class="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Selisih (SO - Sistem)</span>
             <div class="flex items-baseline gap-1 mt-0.5">
-              <span class="text-lg font-bold text-slate-900 dark:text-white" id="statSelisihQty">0</span>
+              <span class="text-base sm:text-lg font-bold text-slate-900 dark:text-white" id="statSelisihQty">0</span>
               <span class="text-[10px] text-slate-400">pcs</span>
             </div>
             <div class="text-[10px] mt-0.5" id="statSelisihQtyBadge">
@@ -403,10 +409,10 @@
             </div>
           </div>
 
-          <div class="bg-slate-50 dark:bg-slate-700/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
-            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Total Dus Sealant (SO)</span>
+          <div class="bg-slate-50 dark:bg-slate-700/50 p-2 sm:p-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
+            <span class="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Total Dus Sealant (SO)</span>
             <div class="flex items-baseline gap-1 mt-0.5">
-              <span class="text-lg font-bold text-slate-900 dark:text-white" id="statMeterFisik">0</span>
+              <span class="text-base sm:text-lg font-bold text-slate-900 dark:text-white" id="statMeterFisik">0</span>
               <span class="text-[10px] text-slate-400">dus</span>
             </div>
             <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -414,10 +420,10 @@
             </div>
           </div>
 
-          <div class="bg-slate-50 dark:bg-slate-700/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
-            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Akurasi Kategori SO</span>
+          <div class="bg-slate-50 dark:bg-slate-700/50 p-2 sm:p-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
+            <span class="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Akurasi Kategori SO</span>
             <div class="flex items-baseline gap-1 mt-0.5">
-              <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400" id="statSelisihMeter">0%</span>
+              <span class="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400" id="statSelisihMeter">0%</span>
               <span class="text-[10px] text-slate-400" id="statCountedSubLabel">(0 item)</span>
             </div>
             <div class="text-[10px] mt-0.5" id="statSelisihMeterBadge">
@@ -426,34 +432,34 @@
           </div>
         </div>
 
-        <!-- 1. SELISIH PER KATEGORI (Warna Berbeda Per Kategori + Rumus Qty SO - Qty Sistem + Konversi Dus Sealant) -->
+        <!-- SELISIH PER KATEGORI (Grid 2 Kolom Ringkas di HP, 3 Kolom di Tablet, 6 Kolom di Desktop) -->
         <div class="space-y-1.5">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300">Selisih &amp; Akurasi Per Kategori (Qty SO − Qty Sistem)</span>
-            <span class="text-[10px] text-slate-400">Klik kartu untuk filter kategori</span>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300">Selisih &amp; Akurasi Per Kategori (Qty SO − Qty Sistem)</span>
+            <span class="text-[9px] sm:text-[10px] text-slate-400 shrink-0">Tap kartu untuk filter</span>
           </div>
-          <div id="categoryVarianceCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
-            <!-- Rendered dynamically for ACP, Sealant, Sunsulate, Rooftop, Accessories -->
+          <div id="categoryVarianceCardsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2">
+            <!-- Rendered dynamically for ACP, Sealant, Sunsulate, Godia, Rooftop, Accessories (+ Lain-lain jika ada) -->
           </div>
         </div>
 
         <!-- Status Chips Breakdown -->
-        <div class="flex items-center justify-between gap-1 pt-2.5 border-t border-slate-100 dark:border-slate-700 text-[11px]">
-          <div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+        <div class="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 dark:border-slate-700 text-[10px] sm:text-[11px]">
+          <div class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
             <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
             <span>Cocok: <b id="countMatch">0</b></span>
           </div>
-          <div class="flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
+          <div class="flex items-center gap-1 text-rose-600 dark:text-rose-400">
             <span class="w-2 h-2 rounded-full bg-rose-500"></span>
             <span>Kurang: <b id="countMinus">0</b></span>
           </div>
-          <div class="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+          <div class="flex items-center gap-1 text-blue-600 dark:text-blue-400">
             <span class="w-2 h-2 rounded-full bg-blue-500"></span>
             <span>Lebih: <b id="countPlus">0</b></span>
           </div>
-          <div class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+          <div class="flex items-center gap-1 text-slate-500 dark:text-slate-400">
             <span class="w-2 h-2 rounded-full bg-slate-400"></span>
-            <span>Belum: <b id="countPending">923</b></span>
+            <span>Belum: <b id="countPending">921</b></span>
           </div>
         </div>
       </section>
@@ -513,8 +519,8 @@
             <option value="Sunsulate">Sunsulate</option>
             <option value="Godia">Godia</option>
             <option value="Rooftop">Rooftop</option>
-            <option value="Accessories">Accessories (Acc &amp; Godia)</option>
-            <option value="Acc">Acc Saja</option>
+            <option value="Accessories">Accessories (Acc)</option>
+            <option value="Lainnya">Lain-lain</option>
           </select>
 
           <select id="sortSelect" class="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500">
@@ -2117,7 +2123,7 @@
             </svg>
             <span>Share HTML</span>
           </button>
-          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.62</span>
+          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.63</span>
         </div>
       </div>
     </div>
@@ -4907,6 +4913,17 @@
         isSealant: false
       },
       {
+        key: 'Godia',
+        label: 'Godia',
+        subtitle: 'Hardware & Fittings',
+        cardCls: 'bg-cyan-50/90 dark:bg-cyan-950/45 border-cyan-300/90 dark:border-cyan-800/80',
+        headerCls: 'bg-cyan-600 text-white',
+        accentText: 'text-cyan-800 dark:text-cyan-200',
+        chkActiveCls: 'border-cyan-500 bg-cyan-600 text-white shadow-xs',
+        chkInactiveCls: 'border-cyan-200 dark:border-cyan-800/70 bg-cyan-50/70 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-200',
+        isSealant: false
+      },
+      {
         key: 'Rooftop',
         label: 'Rooftop',
         subtitle: 'UPVC & Aksesoris Atap',
@@ -4920,13 +4937,25 @@
       {
         key: 'Accessories',
         label: 'Accessories',
-        subtitle: 'Acc, Godia & Fittings',
+        subtitle: 'Acc & Tools',
         cardCls: 'bg-rose-50/90 dark:bg-rose-950/45 border-rose-300/90 dark:border-rose-800/80',
         headerCls: 'bg-rose-600 text-white',
         accentText: 'text-rose-800 dark:text-rose-200',
         chkActiveCls: 'border-rose-500 bg-rose-600 text-white shadow-xs',
         chkInactiveCls: 'border-rose-200 dark:border-rose-800/70 bg-rose-50/70 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200',
         isSealant: false
+      },
+      {
+        key: 'Lainnya',
+        label: 'Lain-lain',
+        subtitle: 'Kategori Lainnya',
+        cardCls: 'bg-slate-100/90 dark:bg-slate-800/80 border-slate-300/90 dark:border-slate-600',
+        headerCls: 'bg-slate-600 text-white',
+        accentText: 'text-slate-700 dark:text-slate-200',
+        chkActiveCls: 'border-slate-500 bg-slate-600 text-white shadow-xs',
+        chkInactiveCls: 'border-slate-300 dark:border-slate-600 bg-slate-100/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200',
+        isSealant: false,
+        optionalIfNonEmpty: true
       }
     ];
 
@@ -4937,8 +4966,10 @@
       if (c === 'ACP') return 'ACP';
       if (c === 'SEALANT') return 'Sealant';
       if (c === 'SUNSULATE') return 'Sunsulate';
+      if (c === 'GODIA') return 'Godia';
       if (c === 'ROOFTOP') return 'Rooftop';
-      return 'Accessories';
+      if (c === 'ACC' || c === 'ACCESSORIES' || c === 'AKSESORIS' || c === 'RIVET') return 'Accessories';
+      return 'Lainnya';
     }
 
     function isExcludedNonSoItem(item) {
@@ -4964,19 +4995,19 @@
       if (modeBadge) {
         if (!isPartial) {
           modeBadge.textContent = 'SO FULL (SEMUA KATEGORI)';
-          modeBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 border border-indigo-200/80 dark:border-indigo-700/70';
+          modeBadge.className = 'px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 border border-indigo-200/80 dark:border-indigo-700/70';
         } else {
           const listStr = Array.from(selectedSoTargetCategories).join(', ').toUpperCase();
           modeBadge.textContent = `SO PARSIAL: ${listStr}`;
-          modeBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 dark:bg-amber-900/70 dark:text-amber-200 border border-amber-300 dark:border-amber-700';
+          modeBadge.className = 'px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold bg-amber-100 text-amber-900 dark:bg-amber-900/70 dark:text-amber-200 border border-amber-300 dark:border-amber-700';
         }
       }
 
       if (hintEl) {
         if (!isPartial) {
-          hintEl.textContent = 'Tidak ada ceklist dipilih → Otomatis SO Full (Semua Kategori)';
+          hintEl.textContent = 'Tidak ada ceklist dipilih → Otomatis SO Full';
         } else {
-          hintEl.textContent = `Fokus SO & Akurasi hanya menghitung ${selectedSoTargetCategories.size} kategori terpilih`;
+          hintEl.textContent = `Fokus SO & Akurasi menghitung ${selectedSoTargetCategories.size} kategori terpilih`;
         }
       }
 
@@ -4991,7 +5022,8 @@
         const checked = selectedSoTargetCategories.has(key);
         if (inp) inp.checked = checked;
         if (def) {
-          lbl.className = `so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border font-bold transition ${checked ? def.chkActiveCls : def.chkInactiveCls}`;
+          const hideOthers = (key === 'Lainnya' && lbl.getAttribute('data-has-items') !== '1' && !checked) ? 'hidden ' : '';
+          lbl.className = `${hideOthers}so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl border font-bold transition ${checked ? def.chkActiveCls : def.chkInactiveCls}`;
         }
       });
     }
@@ -5095,43 +5127,29 @@
         }
       });
 
+      const othersLbl = document.getElementById('soCatLabelOthers');
+      if (othersLbl && catStatsMap['Lainnya']) {
+        othersLbl.setAttribute('data-has-items', catStatsMap['Lainnya'].totalItems > 0 ? '1' : '0');
+        syncSoCategoryChecklistUI();
+      }
+
       const catGrid = document.getElementById('categoryVarianceCardsGrid');
       if (catGrid) {
-        catGrid.innerHTML = SO_SUMMARY_CATEGORIES.map(def => {
+        const visibleCatDefs = SO_SUMMARY_CATEGORIES.filter(def => !def.optionalIfNonEmpty || (catStatsMap[def.key] && catStatsMap[def.key].totalItems > 0));
+        catGrid.innerHTML = visibleCatDefs.map(def => {
           const st = catStatsMap[def.key];
-          const diffQty = st.soQty - st.sysQty;
-          const diffSign = diffQty > 0 ? '+' : '';
-          const diffColor = Math.abs(diffQty) < 0.001
-            ? 'text-emerald-700 dark:text-emerald-300'
-            : (diffQty < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400');
 
           const statusTag = st.countedItems === 0
-            ? '<span class="text-[10px] font-semibold text-slate-400">Belum SO</span>'
-            : (Math.abs(diffQty) < 0.001
-              ? '<span class="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/70 dark:text-emerald-200 text-[9px] font-extrabold">Cocok (0)</span>'
-              : (diffQty < 0
-                ? '<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 dark:bg-rose-900/70 dark:text-rose-200 text-[9px] font-extrabold">Fisik Kurang</span>'
-                : '<span class="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/70 dark:text-blue-200 text-[9px] font-extrabold">Fisik Lebih</span>'));
+            ? '<span class="text-[9px] font-semibold text-slate-400">Belum SO</span>'
+            : (Math.abs(st.soQty - st.sysQty) < 0.001
+              ? '<span class="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/70 dark:text-emerald-200 text-[9px] font-extrabold">Cocok</span>'
+              : ((st.soQty - st.sysQty) < 0
+                ? '<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 dark:bg-rose-900/70 dark:text-rose-200 text-[9px] font-extrabold">Kurang</span>'
+                : '<span class="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/70 dark:text-blue-200 text-[9px] font-extrabold">Lebih</span>'));
 
           const accPct = st.countedItems > 0 ? ((st.matchItems / st.countedItems) * 100).toFixed(0) + '%' : '-';
           const isSelectedTarget = selectedSoTargetCategories.has(def.key);
           const isDimmed = selectedSoTargetCategories.size > 0 && !isSelectedTarget;
-
-          let sealantDusRow = '';
-          if (def.isSealant) {
-            const diffDus = st.soDus - st.sysDus;
-            const dusSign = diffDus > 0 ? '+' : '';
-            sealantDusRow = `
-              <div class="mt-1.5 pt-1.5 border-t border-emerald-200/80 dark:border-emerald-800/70 flex items-center justify-between text-[10px]">
-                <span class="font-bold text-emerald-800 dark:text-emerald-300">Selisih Dus:</span>
-                <span class="font-extrabold ${Math.abs(diffDus) < 0.01 ? 'text-emerald-700 dark:text-emerald-300' : (diffDus < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400')}">${dusSign}${fmtNum(diffDus, 1)} dus</span>
-              </div>
-              <div class="flex items-center justify-between text-[9px] text-emerald-700/80 dark:text-emerald-400/90">
-                <span>SO: ${fmtNum(st.soDus, 1)} dus</span>
-                <span>Sis: ${fmtNum(st.sysDus, 1)} dus</span>
-              </div>
-            `;
-          }
 
           const displaySysQty = st.countedItems > 0 ? st.sysQty : (st.uncountedSysQty || 0);
           const displayDiffQty = st.countedItems > 0 ? (st.soQty - st.sysQty) : -(st.uncountedSysQty || 0);
@@ -5142,6 +5160,7 @@
               ? 'text-emerald-700 dark:text-emerald-300'
               : (displayDiffQty < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'));
 
+          let sealantDusRow = '';
           if (def.isSealant) {
             const displaySysDus = st.countedItems > 0 ? st.sysDus : (st.uncountedSysDus || 0);
             const displayDiffDus = st.countedItems > 0 ? (st.soDus - st.sysDus) : -(st.uncountedSysDus || 0);
@@ -5152,38 +5171,38 @@
                 ? 'text-emerald-700 dark:text-emerald-300'
                 : (displayDiffDus < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'));
             sealantDusRow = `
-              <div class="mt-1.5 pt-1.5 border-t border-emerald-200/80 dark:border-emerald-800/70 flex items-center justify-between text-[10px]">
-                <span class="font-bold text-emerald-800 dark:text-emerald-300">Selisih Dus:</span>
+              <div class="mt-1 pt-1 border-t border-emerald-200/80 dark:border-emerald-800/70 flex items-center justify-between text-[9px] sm:text-[10px]">
+                <span class="font-bold text-emerald-800 dark:text-emerald-300">Dus:</span>
                 <span class="font-extrabold ${dusColor}">${st.countedItems === 0 ? '-' : dusSign + fmtNum(displayDiffDus, 1) + ' dus'}</span>
               </div>
-              <div class="flex items-center justify-between text-[9px] text-emerald-700/80 dark:text-emerald-400/90">
-                <span>SO: ${fmtNum(st.soDus, 1)} dus</span>
-                <span>Sis SO: ${fmtNum(displaySysDus, 1)} dus</span>
+              <div class="flex items-center justify-between text-[8.5px] sm:text-[9px] text-emerald-700/80 dark:text-emerald-400/90 leading-tight">
+                <span>SO:${fmtNum(st.soDus, 1)}</span>
+                <span>Sis:${fmtNum(displaySysDus, 1)}</span>
               </div>
             `;
           }
 
           const totalMasterSys = st.sysQty + (st.uncountedSysQty || 0);
           const uncountedNote = (st.countedItems > 0 && Math.abs(st.uncountedSysQty || 0) >= 0.001)
-            ? `<div class="text-[9px] text-slate-400 mt-0.5 truncate" title="Total stok sistem seluruh item kategori ini: ${fmtNum(totalMasterSys)} pcs">Blm di-SO: ${fmtNum(st.uncountedSysQty || 0)} pcs</div>`
+            ? `<div class="text-[8.5px] text-slate-400 mt-0.5 truncate leading-tight" title="Total stok sistem seluruh item kategori ini: ${fmtNum(totalMasterSys)} pcs">Sisa blm SO: ${fmtNum(st.uncountedSysQty || 0)}</div>`
             : '';
 
           return `
-            <div data-filter-cat="${def.key}" class="cat-summary-card cursor-pointer rounded-xl border p-2.5 transition hover:shadow-md ${def.cardCls} ${isSelectedTarget ? 'ring-2 ring-offset-1 ring-indigo-500 dark:ring-offset-slate-800' : ''} ${isDimmed ? 'opacity-50' : ''}" title="Klik untuk menampilkan barang kategori ${def.label}">
-              <div class="flex items-center justify-between gap-1 mb-1.5">
-                <span class="px-2 py-0.5 rounded-lg text-[10px] font-extrabold tracking-wide ${def.headerCls}">${def.label}</span>
-                <span class="text-[10px] font-bold ${def.accentText}">Akurasi: ${accPct}</span>
+            <div data-filter-cat="${def.key}" class="cat-summary-card cursor-pointer rounded-xl border p-2 transition hover:shadow-md ${def.cardCls} ${isSelectedTarget ? 'ring-2 ring-offset-1 ring-indigo-500 dark:ring-offset-slate-800' : ''} ${isDimmed ? 'opacity-50' : ''}" title="Klik untuk menampilkan barang kategori ${def.label}">
+              <div class="flex items-center justify-between gap-1 mb-1">
+                <span class="px-1.5 py-0.5 rounded-md text-[9.5px] sm:text-[10px] font-extrabold tracking-wide truncate ${def.headerCls}">${def.label}</span>
+                <span class="text-[9.5px] sm:text-[10px] font-bold shrink-0 ${def.accentText}">Akur: ${accPct}</span>
               </div>
-              <div class="flex items-baseline justify-between gap-1">
-                <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Selisih:</span>
-                <span class="text-sm font-black ${displayDiffColor}">${st.countedItems === 0 ? '-' : displayDiffSign + fmtNum(displayDiffQty)} <span class="text-[10px] font-normal">pcs</span></span>
+              <div class="flex items-baseline justify-between gap-1 leading-tight">
+                <span class="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400">Selisih:</span>
+                <span class="text-xs sm:text-sm font-black truncate ${displayDiffColor}">${st.countedItems === 0 ? '-' : displayDiffSign + fmtNum(displayDiffQty)} <span class="text-[9px] font-normal">pcs</span></span>
               </div>
-              <div class="flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-300 mt-0.5">
+              <div class="flex items-center justify-between text-[9px] sm:text-[10px] text-slate-600 dark:text-slate-300 mt-0.5 leading-tight">
                 <span>SO: <b>${fmtNum(st.soQty)}</b></span>
-                <span>Sis SO: <b>${fmtNum(displaySysQty)}</b></span>
+                <span>Sis: <b>${fmtNum(displaySysQty)}</b></span>
               </div>
-              <div class="flex items-center justify-between text-[10px] mt-1">
-                <span class="text-slate-500 dark:text-slate-400">${st.countedItems}/${st.activeStockItems || st.totalItems} item</span>
+              <div class="flex items-center justify-between text-[9px] sm:text-[10px] mt-1 pt-0.5 border-t border-black/5 dark:border-white/5">
+                <span class="text-slate-500 dark:text-slate-400 font-medium">${st.countedItems}/${st.activeStockItems || st.totalItems} item</span>
                 ${statusTag}
               </div>
               ${uncountedNote}
@@ -6037,8 +6056,8 @@
         if (currentFilter === 'custom' && !item.isCustom) return false;
 
         if (currentProfile !== 'all') {
-          if (currentProfile === 'Accessories') {
-            if (normalizeSummaryCategoryKey(item.cat) !== 'Accessories') return false;
+          if (currentProfile === 'Accessories' || currentProfile === 'Lainnya') {
+            if (normalizeSummaryCategoryKey(item.cat) !== currentProfile) return false;
           } else if (item.cat !== currentProfile) {
             return false;
           }
@@ -8847,7 +8866,7 @@
       } catch (e) {}
     }
 
-    const DEFAULT_APP_BUILD_NUMBER = '62';
+    const DEFAULT_APP_BUILD_NUMBER = '63';
 
     function getDynamicAppVersionCode() {
       let buildNum = DEFAULT_APP_BUILD_NUMBER;
