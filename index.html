@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="MBG SO Mobile" />
-  <meta name="mbg-app-version" content="26.11.70" />
+  <meta name="mbg-app-version" content="26.11.71" />
   <link id="pwaManifestLink" rel="manifest" href="" />
   <link id="pwaAppleIcon" rel="apple-touch-icon" href="" />
   <link id="pwaFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%231e3a8a'/%3E%3Ctext x='96' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='56' fill='%23ffffff'%3ENII%3C/text%3E%3Ctext x='96' y='142' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='40' fill='%2393c5fd'%3ESO%3C/text%3E%3C/svg%3E" />
@@ -560,7 +560,7 @@
         <div class="space-y-1.5">
           <div class="flex items-center justify-between gap-2">
             <span class="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300">Selisih &amp; Akurasi Per Kategori (Qty SO − Qty Sistem)</span>
-            <span class="text-[9px] sm:text-[10px] text-slate-400 shrink-0">Tap kartu untuk filter</span>
+            <span class="text-[9px] sm:text-[10px] text-slate-400 shrink-0">Tap kartu untuk analisis</span>
           </div>
           <div id="categoryVarianceCardsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2">
             <!-- Rendered dynamically for ACP, Sealant, Sunsulate, Godia, Rooftop, Accessories (+ Lain-lain jika ada) -->
@@ -2159,7 +2159,7 @@
             </svg>
             <span>Share HTML</span>
           </button>
-          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.70</span>
+          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.71</span>
         </div>
       </div>
     </div>
@@ -5397,6 +5397,80 @@
       });
     }
 
+    function computeCategoryNotesBreakdown(categoryItems, categoryKey) {
+      const isAlreadyCounted = it => it.countQty !== null && it.countQty !== undefined && Number.isFinite(Number(it.countQty)) && Number(it.countQty) > 0;
+      const rxReject = /\bREJECT\b/i;
+      const rxCampur = /\b(ACP\s*)?CAMPUR\b|WARNA\s*CAMPUR|MIX\s*WARNA|TIDAK\s*TAHU\s*WARNA|TIDAK\s*ADA\s*WARNA|WARNA\s*(TIDAK\s*DIKETAHUI|UNKNOWN)|UNKNOWN\s*COLOR|NO\s*COLOR|TANPA\s*(KETERANGAN\s*)?WARNA|BLIND\s*COLOR/i;
+
+      const activeUserLogsById = new Map();
+      Object.entries(userLogs || {}).forEach(([uKey, entries]) => {
+        if (!Array.isArray(entries)) return;
+        entries.forEach(log => {
+          const id = Number(log.id);
+          if (!id) return;
+          if (!activeUserLogsById.has(id)) activeUserLogsById.set(id, new Map());
+          const uMap = activeUserLogsById.get(id);
+          const prev = uMap.get(uKey);
+          if (!prev || Number(log.timestamp || 0) >= Number(prev.timestamp || 0)) {
+            uMap.set(uKey, log);
+          }
+        });
+      });
+
+      let rejectItemCount = 0;
+      let campurItemCount = 0;
+      let campurTotalQty = 0;
+
+      categoryItems.forEach(it => {
+        if (!isAlreadyCounted(it)) return;
+        const itemId = Number(it.id);
+        const totalItemQty = Number(it.countQty) || 0;
+        const masterKet = String(it.ket || it.keterangan || '').trim();
+        const nameAndSpec = `${it.name || ''} ${it.tipe || ''} ${it.grade || ''}`.trim();
+        const uMap = activeUserLogsById.get(itemId);
+
+        const activeUserNotes = [];
+        let userSpecificCampurQty = 0;
+        let hasUserSpecificNote = false;
+
+        if (uMap) {
+          uMap.forEach((logEntry, uKey) => {
+            const uQty = (it.userCounts && it.userCounts[uKey] !== undefined)
+              ? Number(it.userCounts[uKey]) || 0
+              : (Number(logEntry.finalUserQty) || 0);
+            if (uQty <= 0) return;
+            const uKet = String(logEntry.ket || logEntry.keterangan || '').trim();
+            if (uKet) {
+              activeUserNotes.push(uKet);
+              if (rxCampur.test(uKet)) {
+                userSpecificCampurQty += uQty;
+                hasUserSpecificNote = true;
+              }
+            }
+          });
+        }
+
+        const combinedNotes = [masterKet, ...activeUserNotes].filter(Boolean).join(' | ');
+
+        if (rxReject.test(combinedNotes)) {
+          rejectItemCount++;
+        }
+
+        if (categoryKey === 'ACP') {
+          const isItemLevelCampur = rxCampur.test(masterKet) || rxCampur.test(nameAndSpec);
+          if (isItemLevelCampur) {
+            campurItemCount++;
+            campurTotalQty += totalItemQty;
+          } else if (hasUserSpecificNote && userSpecificCampurQty > 0) {
+            campurItemCount++;
+            campurTotalQty += userSpecificCampurQty;
+          }
+        }
+      });
+
+      return { rejectItemCount, campurItemCount, campurTotalQty };
+    }
+
     // Update KPIs & Progress
     function updateKPIs() {
       syncSoCategoryChecklistUI();
@@ -5630,8 +5704,36 @@
             ? `<div class="text-[8.5px] text-slate-400 mt-0.5 truncate leading-tight" title="Total stok sistem seluruh item kategori ini: ${fmtNum(totalMasterSys)} pcs">Sisa blm SO: ${fmtNum(st.uncountedSysQty || 0)}</div>`
             : '';
 
+          const knownCategoryKeys = new Set(['ACP', 'Sealant', 'Sunsulate', 'Godia', 'Rooftop', 'Accessories', 'Acc']);
+          const categoryItems = allItems.filter(it => {
+            if (isExcludedNonSoItem(it)) return false;
+            const itemKey = normalizeSummaryCategoryKey(it.cat);
+            if (def.key === 'Lainnya') return !knownCategoryKeys.has(itemKey);
+            return itemKey === def.key || (def.key === 'Accessories' && itemKey === 'Acc');
+          });
+          const notesBreakdown = computeCategoryNotesBreakdown(categoryItems, def.key);
+          const rejectCount = notesBreakdown.rejectItemCount;
+
+          let acpExtraRows = '';
+          if (def.key === 'ACP') {
+            acpExtraRows = `
+              <div class="mt-1.5 pt-1.5 border-t border-sky-300/70 dark:border-sky-700/70 space-y-0.5" aria-label="Ringkasan ACP Campur">
+                <div class="flex items-center justify-between gap-1 text-[8px] sm:text-[9px] leading-tight">
+                  <span class="font-bold text-sky-800 dark:text-sky-200">ACP Campur</span>
+                  <span class="font-extrabold tabular-nums text-sky-800 dark:text-sky-200">${fmtNum(notesBreakdown.campurTotalQty)} pcs</span>
+                </div>
+                <div class="text-[7.5px] sm:text-[8px] text-sky-700/80 dark:text-sky-300/80">${fmtNum(notesBreakdown.campurItemCount)} item terhitung</div>
+              </div>`;
+          }
+
+          const rejectRow = `
+            <div class="mt-1.5 pt-1.5 border-t border-current/15 flex items-center justify-between gap-1 leading-tight" aria-label="Jumlah item reject berdasarkan keterangan">
+              <span class="text-[8px] sm:text-[9px] font-bold ${def.accentText}">Reject (notes)</span>
+              <span class="text-[9px] sm:text-[10px] font-extrabold tabular-nums ${def.accentText}">${fmtNum(rejectCount)} item</span>
+            </div>`;
+
           return `
-            <div data-filter-cat="${def.key}" class="cat-summary-card cursor-pointer rounded-xl border p-2 transition hover:shadow-md ${def.cardCls} ${isSelectedTarget ? 'ring-2 ring-offset-1 ring-indigo-500 dark:ring-offset-slate-800' : ''} ${isDimmed ? 'opacity-50' : ''}" title="Klik untuk menampilkan barang kategori ${def.label}">
+            <div data-filter-cat="${def.key}" class="cat-summary-card cursor-pointer rounded-xl border p-2 transition hover:shadow-md ${def.cardCls} ${isSelectedTarget ? 'ring-2 ring-offset-1 ring-indigo-500 dark:ring-offset-slate-800' : ''} ${isDimmed ? 'opacity-50' : ''}" title="Klik untuk membuka analisis dan memfilter barang kategori ${def.label}">
               <div class="flex items-center justify-between gap-1 mb-1">
                 <span class="px-1.5 py-0.5 rounded-md text-[9.5px] sm:text-[10px] font-extrabold tracking-wide truncate ${def.headerCls}">${def.label}</span>
                 <span class="text-[9.5px] sm:text-[10px] font-extrabold shrink-0 ${def.accentText}">Akurasi: ${accPct}</span>
@@ -5652,6 +5754,8 @@
                 ${statusTag}
               </div>
               ${uncountedNote}
+              ${acpExtraRows}
+              ${rejectRow}
               ${sealantDusRow}
             </div>
           `;
@@ -5660,8 +5764,15 @@
         catGrid.querySelectorAll('.cat-summary-card').forEach(card => {
           card.addEventListener('click', () => {
             const catKey = card.getAttribute('data-filter-cat');
+            // Buka analisis dari kartu kategori pada dashboard (bukan hanya tabel rekap).
+            // Alias diperlukan karena nama kategori kartu dan PROFILE_CATEGORIES berbeda.
+            const analysisKey = catKey === 'Accessories' ? 'Acc'
+              : (catKey === 'Lainnya' ? 'OTHERS' : catKey);
+            if (typeof openSoCategoryAnalysis === 'function') {
+              openSoCategoryAnalysis(analysisKey);
+            }
+            // Tetap pertahankan perilaku lama: daftar barang ikut terfilter ke kategori yang diketuk.
             const profEl = document.getElementById('profileFilter');
-            // Hanya filter tampilan daftar barang; target kategori SO hanya diatur ANDRI lewat ceklist
             if (profEl) {
               profEl.value = (currentProfile === catKey) ? 'all' : catKey;
               currentProfile = profEl.value;
@@ -6329,7 +6440,9 @@
         }
 
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-700/40 transition';
+        tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-700/40 transition cursor-pointer';
+        tr.setAttribute('data-so-analysis-cat', catDef.key);
+        tr.title = 'Ketuk untuk membuka analisis kategori';
         tr.innerHTML = `
           <td class="py-2.5 px-3">
             <span class="font-bold text-slate-800 dark:text-slate-100 block">${catDef.label}</span>
@@ -9375,6 +9488,24 @@
       return 'Data SO sedang dikunci oleh ANDRI.';
     }
 
+    function canCurrentUserUploadSystemExcel(branchOverride) {
+      const u = String((syncConfig && syncConfig.checker) || '').trim().toUpperCase();
+      if (!isAuthenticatedSession || !u) {
+        return { ok: false, reason: 'Silakan login terlebih dahulu sebelum mengupload file Excel sistem.' };
+      }
+      if (!isRegisteredUser(u)) {
+        return { ok: false, reason: `User "${u}" belum terdaftar di Setup User. Hubungi Admin (ANDRI).` };
+      }
+      const targetBranch = normalizeBranchCode(branchOverride || getActiveBranchCode()) || getActiveBranchCode();
+      if (!isUserAllowedForBranch(u, targetBranch)) {
+        return { ok: false, reason: `User "${u}" tidak memiliki hak akses untuk cabang ${formatBranchLabel(targetBranch)}.` };
+      }
+      if (isBranchLocked(targetBranch) && u !== 'ANDRI') {
+        return { ok: false, reason: `Data SO cabang ${formatBranchLabel(targetBranch)} sedang dikunci oleh ANDRI.` };
+      }
+      return { ok: true, user: u, branch: targetBranch };
+    }
+
     function getEffectiveOnlineUsers() {
       const now = Date.now();
       const map = new Map();
@@ -9582,7 +9713,7 @@
       } catch (e) {}
     }
 
-    const DEFAULT_APP_BUILD_NUMBER = '70';
+    const DEFAULT_APP_BUILD_NUMBER = '71';
 
     function getDynamicAppVersionCode() {
       let buildNum = DEFAULT_APP_BUILD_NUMBER;
@@ -11661,7 +11792,49 @@ function doPost(e) {
     var sheet = sheets.soSheet;
     var logSheet = sheets.logSheet;
 
+    function isUserAllowedBranchServer_(propsObj, userName, branchCode) {
+      var u = String(userName || '').trim().toUpperCase();
+      var b = String(branchCode || '').trim().toUpperCase();
+      if (!u) return false;
+      var defaultFull = ['ANDRI', 'CACA', 'MEVY', 'RINA', 'RIZAL', 'ANGEL'];
+      var defaultMap = {
+        'SONYA': ['BANDUNG'], 'ANA': ['BANDUNG'],
+        'INTAN-SMG': ['SEMARANG'],
+        'HANNY': ['SURABAYA'], 'RINA-SBY': ['SURABAYA'], 'ALAN': ['SURABAYA'], 'TASIA': ['SURABAYA'],
+        'SABETH': ['MEDAN'], 'MAGDA': ['MAKASSAR'],
+        'MELI': ['PALEMBANG'], 'RINI': ['PALEMBANG'],
+        'NIKEN': ['GREEN_GARDEN'], 'SARAH': ['CENGKARENG'], 'INTAN-SND': ['SINDUR']
+      };
+      var fullList = defaultFull.slice();
+      var bMap = {};
+      Object.keys(defaultMap).forEach(function(k) { bMap[k] = defaultMap[k].slice(); });
+      try {
+        var rawUA = propsObj.getProperty('USER_BRANCH_ACCESS_MAP_V1');
+        if (rawUA) {
+          var parsedUA = JSON.parse(rawUA);
+          if (parsedUA && Array.isArray(parsedUA.fullAccessUsers)) fullList = parsedUA.fullAccessUsers;
+          if (parsedUA && parsedUA.branchMap) bMap = parsedUA.branchMap;
+          if (parsedUA && Array.isArray(parsedUA.deletedUsers)) {
+            parsedUA.deletedUsers.forEach(function(du) {
+              var duUp = String(du || '').trim().toUpperCase();
+              fullList = fullList.filter(function(x) { return x !== duUp; });
+              delete bMap[duUp];
+            });
+          }
+        }
+      } catch (eUA) {}
+      if (fullList.indexOf(u) !== -1) return true;
+      if (bMap[u] && Array.isArray(bMap[u])) {
+        return bMap[u].indexOf(b) !== -1;
+      }
+      return false;
+    }
+
     if (data.action === 'replace_system_stock' || (data.action === 'update_system_stock' && data.mode === 'replace')) {
+      if (!isUserAllowedBranchServer_(props, checker, branch)) {
+        return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'User ' + checker + ' tidak terdaftar atau tidak memiliki akses upload ke cabang ' + branch + '.' }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
       if (props.getProperty('LOCK_' + branch) === 'TRUE' && checker !== 'ANDRI') {
         return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Data SO cabang ' + branch + ' sedang dikunci oleh ANDRI.' }))
           .setMimeType(ContentService.MimeType.JSON);
@@ -11693,7 +11866,8 @@ function doPost(e) {
     }
 
     if (data.action === 'clear_all_so') {
-      if (checker !== 'ANDRI') {
+      var allowReplaceClear = Boolean(data.forSystemExcelReplace) && isUserAllowedBranchServer_(props, checker, branch) && props.getProperty('LOCK_' + branch) !== 'TRUE';
+      if (checker !== 'ANDRI' && !allowReplaceClear) {
         return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Hanya ANDRI yang dapat Clear All SO.' }))
           .setMimeType(ContentService.MimeType.JSON);
       }
@@ -11968,7 +12142,9 @@ function doPost(e) {
                 body: JSON.stringify({
                   action: 'clear_all_so',
                   branch: targetBranchForUpload,
-                  checker: 'ANDRI'
+                  checker: uploaderName,
+                  user: uploaderName,
+                  forSystemExcelReplace: true
                 })
               });
               const resFallback = await fetch(syncConfig.url, {
@@ -13230,15 +13406,16 @@ function doPost(e) {
           showToast('Silakan isi identitas petugas terlebih dahulu', false);
           return;
         }
-        if (isEditBlockedByLock()) {
-          showToast('Data SO cabang ini sedang dikunci oleh ANDRI', false);
+        const perm = canCurrentUserUploadSystemExcel();
+        if (!perm.ok) {
+          showToast(perm.reason, false);
           return;
         }
         attachSystemExcelPanelToModal();
         const brLbl = document.getElementById('modalSystemExcelBranchLabel');
         const usrLbl = document.getElementById('modalSystemExcelUserLabel');
-        if (brLbl) brLbl.textContent = formatBranchLabel(getActiveBranchCode());
-        if (usrLbl) usrLbl.textContent = (syncConfig.checker || '').trim().toUpperCase();
+        if (brLbl) brLbl.textContent = formatBranchLabel(perm.branch);
+        if (usrLbl) usrLbl.textContent = perm.user;
         document.getElementById('systemExcelModal').classList.remove('hidden');
       }
 
@@ -13619,6 +13796,274 @@ function doPost(e) {
     })();
   
     try { updateArchiveSavePermissionUI(); } catch (e) {}
+</script>
+
+  <div id="soAnalysisModal" class="fixed inset-0 z-[90] hidden bg-slate-950/70 backdrop-blur-sm p-2 sm:p-4 no-print">
+    <div class="mx-auto my-2 sm:my-5 w-full max-w-5xl max-h-[94dvh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-700">
+      <div class="sticky top-0 z-10 flex items-start justify-between gap-3 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-700">
+        <div><h2 id="soAnalysisTitle" class="font-black text-base sm:text-lg">Analisis Stock Opname</h2><p id="soAnalysisSubtitle" class="mt-1 text-[11px] text-slate-500"></p><p class="mt-1 text-[10px] text-indigo-600">Ketuk kartu kategori dashboard atau baris kategori pada Rekap untuk membuka analisis</p></div>
+        <button id="soAnalysisClose" type="button" class="shrink-0 rounded-xl px-3 py-2 bg-slate-100 dark:bg-slate-700 font-bold text-sm">Tutup ✕</button>
+      </div>
+      <div class="p-3 sm:p-4 space-y-4">
+        <div id="soAnalysisMetrics" class="grid grid-cols-2 sm:grid-cols-4 gap-1.5"></div>
+        <section id="soAnalysisSummary" class="rounded-xl border border-slate-200 dark:border-slate-700 p-2.5">
+          <h3 class="font-extrabold text-[11px] mb-1.5">RINGKASAN KATEGORI</h3>
+          <div id="soAnalysisSummaryRows" class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px]"></div>
+        </section>
+        <section class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div class="p-3 border-b border-slate-200 dark:border-slate-700"><h3 class="font-extrabold text-xs">1. TOP 10 PENYEBAB SELISIH TERBESAR</h3><p class="text-[10px] text-slate-500">Diurutkan berdasarkan nilai absolut selisih terbesar terhadap sistem (penyebab utama total selisih). Kolom perubahan membandingkan dengan arsip SO sebelumnya bila tersedia.</p></div>
+          <div class="overflow-x-auto"><table class="w-full text-[10px] text-left"><thead class="bg-slate-50 dark:bg-slate-800 text-slate-500"><tr><th class="px-3 py-2">#</th><th class="px-3 py-2">Nama barang</th><th class="px-3 py-2 text-right">Selisih kini</th><th class="px-3 py-2 text-right">Selisih lalu</th><th class="px-3 py-2 text-right">Perubahan</th></tr></thead><tbody id="soAnalysisTopRows"></tbody></table></div>
+        </section>
+        <section class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+          <h3 class="font-extrabold text-xs">2. ANALISIS & REKOMENDASI</h3>
+          <ol id="soAnalysisPoints" class="mt-2 space-y-2 text-xs leading-relaxed text-slate-700 dark:text-slate-200"></ol>
+        </section>
+        <section class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div class="p-3 border-b border-slate-200 dark:border-slate-700"><h3 class="font-extrabold text-xs">3. DETAIL SELISIH PER BRAND / SERI</h3><p class="text-[10px] text-slate-500">Pengelompokan sementara berdasarkan kata kunci nama barang, grade, dan tipe; mohon validasi master brand jika tersedia.</p></div>
+          <div class="overflow-x-auto"><table class="w-full text-[10px] text-left"><thead class="bg-slate-50 dark:bg-slate-800 text-slate-500"><tr><th class="px-3 py-2">Brand / seri</th><th class="px-3 py-2 text-center">Item selisih</th><th class="px-3 py-2 text-right">Total kurang</th><th class="px-3 py-2 text-right">Total lebih</th><th class="px-3 py-2 text-right">Net selisih</th></tr></thead><tbody id="soAnalysisBrandRows"></tbody></table></div>
+        </section>
+        <p class="text-[10px] text-slate-400">Catatan: analisis ini bersifat indikatif untuk membantu prioritas audit. Validasi transaksi dan dokumen sumber tetap diperlukan sebelum adjustment persediaan.</p>
+      </div>
+    </div>
+  </div>
+
+<script>
+
+      // Klik kategori untuk membuka analisis SO mendalam
+      document.addEventListener('click', (ev) => {
+        const row = ev.target.closest('#recapProfileTableBody tr[data-so-analysis-cat]');
+        if (row) openSoCategoryAnalysis(row.getAttribute('data-so-analysis-cat'));
+      });
+
+      function closeSoCategoryAnalysis() {
+        document.getElementById('soAnalysisModal')?.classList.add('hidden');
+      }
+
+      function soAnalysisBrand(item) {
+        const source = `${item.brand || ''} ${item.grade || ''} ${item.tipe || ''} ${item.name || ''}`.toUpperCase();
+        const rules = [
+          ['Glazing', /GLAZING/],
+          ['Xilflex', /XILFLEX|XI[ -]?FLEX/],
+          ['EP Sealant', /EP[\s-]?SEALANT|EPSEALANT/],
+          ['Sealant lainnya', /SEALANT|SILICONE|SILIKON/]
+        ];
+        const found = rules.find(([label, re]) => re.test(source));
+        if (found) return found[0];
+        const first = String(item.brand || '').trim();
+        return first || 'Brand / seri lainnya';
+      }
+
+      function openSoCategoryAnalysis(categoryKey) {
+        if (categoryKey === 'Accessories') categoryKey = 'Acc';
+        if (categoryKey === 'Lainnya') categoryKey = 'OTHERS';
+        const catDef = PROFILE_CATEGORIES.find(c => c.key === categoryKey);
+        if (!catDef) return;
+
+        const currentItems = allItems.filter(item => {
+          if (isExcludedNonSoItem(item)) return false;
+          return catDef.key === 'OTHERS'
+            ? !PROFILE_CATEGORIES.filter(c => c.key !== 'OTHERS').some(c => c.match(item))
+            : catDef.match(item);
+        });
+
+        const isAlreadyCounted = it => it.countQty !== null && it.countQty !== undefined && Number.isFinite(Number(it.countQty));
+        const counted = currentItems.filter(isAlreadyCounted);
+
+        const totalAllSysQty = currentItems.reduce((sum, it) => sum + (Number(it.sysQty) || 0), 0);
+        const countedSysQty = counted.reduce((sum, it) => sum + (Number(it.sysQty) || 0), 0);
+        const totalCountQty = counted.reduce((sum, it) => sum + (Number(it.countQty) || 0), 0);
+        const netDiff = totalCountQty - countedSysQty;
+
+        const discrepancies = counted.map(it => {
+          const sys = Number(it.sysQty) || 0;
+          const fisik = Number(it.countQty) || 0;
+          return { item: it, sys, fisik, diff: fisik - sys };
+        }).filter(x => Math.abs(x.diff) >= 0.001);
+
+        const minusItems = discrepancies.filter(x => x.diff < 0);
+        const plusItems = discrepancies.filter(x => x.diff > 0);
+        const minusQtySum = minusItems.reduce((s, x) => s + x.diff, 0);
+        const plusQtySum = plusItems.reduce((s, x) => s + x.diff, 0);
+        const matchCount = counted.length - discrepancies.length;
+        const accuracy = counted.length ? (matchCount / counted.length) * 100 : 0;
+        const progressPct = currentItems.length ? (counted.length / currentItems.length) * 100 : 0;
+
+        const normCatKey = categoryKey === 'Acc' ? 'Accessories' : (categoryKey === 'OTHERS' ? 'Lainnya' : categoryKey);
+        const notesInfo = computeCategoryNotesBreakdown(currentItems, normCatKey);
+
+        let sealantExtraHtml = '';
+        if (categoryKey === 'Sealant') {
+          const soDus = counted.reduce((s, it) => s + calcSealantDusDecimal(it, Number(it.countQty) || 0), 0);
+          const sysDus = counted.reduce((s, it) => s + calcSealantDusDecimal(it, Number(it.sysQty) || 0), 0);
+          const diffDus = soDus - sysDus;
+          sealantExtraHtml = `
+            <div class="rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 p-2.5 flex items-center justify-between gap-2 text-[11px]">
+              <span class="font-bold text-emerald-900 dark:text-emerald-200">Konversi Dus Sealant</span>
+              <span class="font-black tabular-nums text-right ${diffDus < 0 ? 'text-rose-600' : diffDus > 0 ? 'text-blue-600' : 'text-emerald-700'}">
+                SO ${fmtNum(soDus, 1)}d vs Sis ${fmtNum(sysDus, 1)}d (${diffDus > 0 ? '+' : ''}${fmtNum(diffDus, 1)}d)
+              </span>
+            </div>`;
+        }
+
+        let acpCampurHtml = '';
+        if (categoryKey === 'ACP') {
+          acpCampurHtml = `
+            <div class="rounded-xl bg-sky-50/90 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-800/60 p-2.5 flex items-center justify-between gap-2 text-[11px]">
+              <div>
+                <span class="font-extrabold text-sky-900 dark:text-sky-200 block">ACP Campur / Warna Tidak Diketahui</span>
+                <span class="text-[10px] text-sky-700/80 dark:text-sky-300/80">Tercatat pada ${fmtNum(notesInfo.campurItemCount)} item terhitung</span>
+              </div>
+              <span class="text-sm font-black tabular-nums text-sky-800 dark:text-sky-200 shrink-0">${fmtNum(notesInfo.campurTotalQty)} pcs</span>
+            </div>`;
+        }
+
+        const top5 = discrepancies.slice().sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).slice(0, 5);
+        const topRowsHtml = top5.length ? top5.map((x, idx) => `
+          <div class="flex items-center justify-between gap-2 py-2 px-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/70">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] font-black text-slate-400">#${idx + 1}</span>
+                <span class="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">${escapeHtml(x.item.name || '-')}</span>
+              </div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                SO: <b>${fmtNum(x.fisik)}</b> • Sis: <b>${fmtNum(x.sys)}</b>${x.item.loc ? ` • Rak: <b>${escapeHtml(x.item.loc)}</b>` : ''}
+              </div>
+            </div>
+            <span class="px-2 py-1 rounded-lg text-xs font-black tabular-nums shrink-0 ${x.diff < 0 ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300'}">
+              ${x.diff > 0 ? '+' : ''}${fmtNum(x.diff)} pcs
+            </span>
+          </div>
+        `).join('') : `
+          <div class="py-4 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+            ${counted.length === 0 ? 'Belum ada item yang dihitung pada kategori ini.' : 'Tidak ada selisih — seluruh item terhitung cocok 100%.'}
+          </div>`;
+
+        let shortConclusion = '';
+        if (counted.length === 0) {
+          shortConclusion = `Kategori ${catDef.label} belum memiliki inputan SO (${fmtNum(currentItems.length)} item menunggu dihitung).`;
+        } else if (discrepancies.length === 0) {
+          shortConclusion = `Seluruh ${fmtNum(counted.length)} item yang sudah dihitung cocok 100% dengan stok sistem (${fmtNum(totalCountQty)} pcs).`;
+        } else {
+          shortConclusion = `Dari ${fmtNum(counted.length)} item terhitung, ${fmtNum(matchCount)} item cocok (${accuracy.toFixed(1)}%) dan ${fmtNum(discrepancies.length)} item berselisih (${minusItems.length} kurang, ${plusItems.length} lebih) dengan net selisih ${netDiff > 0 ? '+' : ''}${fmtNum(netDiff)} pcs.`;
+        }
+
+        const branchLabel = formatBranchLabel(getActiveBranchCode());
+        const sysDateText = String(syncConfig.systemDate || '').trim() || '-';
+        const modal = document.getElementById('soAnalysisModal');
+        const filterCatVal = categoryKey === 'Acc' ? 'Accessories' : (categoryKey === 'OTHERS' ? 'Lainnya' : categoryKey);
+
+        modal.innerHTML = `
+          <div class="mx-auto my-3 sm:my-6 w-full max-w-xl max-h-[90dvh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col">
+            <div class="sticky top-0 z-10 px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-indigo-100 text-indigo-800 dark:bg-indigo-900/70 dark:text-indigo-200">${escapeHtml(catDef.label)}</span>
+                  <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Cabang ${escapeHtml(branchLabel)} • Data ${escapeHtml(sysDateText)}</span>
+                </div>
+                <h2 class="font-black text-sm sm:text-base text-slate-900 dark:text-white mt-0.5 truncate">Summary SO — ${escapeHtml(catDef.label)}</h2>
+              </div>
+              <button id="soAnalysisClose" type="button" class="px-2.5 py-1.5 rounded-xl bg-rose-100/90 dark:bg-rose-900/50 hover:bg-rose-200 text-rose-700 dark:text-rose-200 text-xs font-extrabold shrink-0">Tutup ✕</button>
+            </div>
+
+            <div class="p-3.5 sm:p-4 space-y-3 text-xs">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div class="rounded-2xl bg-slate-50 dark:bg-slate-800 p-2.5 border border-slate-200/70 dark:border-slate-700">
+                  <span class="text-[10px] font-semibold text-slate-400 block">Net Selisih</span>
+                  <span class="text-base sm:text-lg font-black tabular-nums ${netDiff < 0 ? 'text-rose-600' : netDiff > 0 ? 'text-blue-600' : 'text-emerald-600'}">
+                    ${counted.length === 0 ? '-' : (netDiff > 0 ? '+' : '') + fmtNum(netDiff)}
+                  </span>
+                  <span class="text-[9.5px] text-slate-400 block">pcs</span>
+                </div>
+                <div class="rounded-2xl bg-slate-50 dark:bg-slate-800 p-2.5 border border-slate-200/70 dark:border-slate-700">
+                  <span class="text-[10px] font-semibold text-slate-400 block">Akurasi Item</span>
+                  <span class="text-base sm:text-lg font-black tabular-nums text-brand-600 dark:text-blue-400">${counted.length ? accuracy.toFixed(1) + '%' : '-'}</span>
+                  <span class="text-[9.5px] text-slate-400 block">${matchCount}/${counted.length} cocok</span>
+                </div>
+                <div class="rounded-2xl bg-rose-50/70 dark:bg-rose-950/30 p-2.5 border border-rose-200/70 dark:border-rose-800/50">
+                  <span class="text-[10px] font-semibold text-rose-600 dark:text-rose-400 block">Kurang (-)</span>
+                  <span class="text-base sm:text-lg font-black tabular-nums text-rose-600 dark:text-rose-400">${minusItems.length} item</span>
+                  <span class="text-[9.5px] text-rose-500/80 tabular-nums block">${fmtNum(minusQtySum)} pcs</span>
+                </div>
+                <div class="rounded-2xl bg-blue-50/70 dark:bg-blue-950/30 p-2.5 border border-blue-200/70 dark:border-blue-800/50">
+                  <span class="text-[10px] font-semibold text-blue-600 dark:text-blue-400 block">Lebih (+)</span>
+                  <span class="text-base sm:text-lg font-black tabular-nums text-blue-600 dark:text-blue-400">${plusItems.length} item</span>
+                  <span class="text-[9.5px] text-blue-500/80 tabular-nums block">${plusQtySum > 0 ? '+' : ''}${fmtNum(plusQtySum)} pcs</span>
+                </div>
+              </div>
+
+              <div class="rounded-2xl bg-slate-50/90 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700 p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                <div>
+                  <span class="text-[10px] text-slate-400 block">Progres Hitung</span>
+                  <b class="text-slate-800 dark:text-slate-100">${counted.length}/${currentItems.length} (${progressPct.toFixed(0)}%)</b>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 block">Total Qty SO</span>
+                  <b class="text-slate-800 dark:text-slate-100 tabular-nums">${fmtNum(totalCountQty)} pcs</b>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 block">Sistem (SO / Total)</span>
+                  <b class="text-slate-800 dark:text-slate-100 tabular-nums">${fmtNum(countedSysQty)} / ${fmtNum(totalAllSysQty)}</b>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 block">Notes Reject</span>
+                  <b class="text-rose-600 dark:text-rose-400 tabular-nums">${fmtNum(notesInfo.rejectItemCount)} item</b>
+                </div>
+              </div>
+
+              ${acpCampurHtml}
+              ${sealantExtraHtml}
+
+              <div class="rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/70 dark:border-indigo-800/50 px-3 py-2 text-[11px] text-indigo-950 dark:text-indigo-200 leading-snug">
+                <b>Ringkasan:</b> ${escapeHtml(shortConclusion)}
+              </div>
+
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Prioritas Selisih Terbesar (Top 5)</span>
+                  <span class="text-[10px] text-slate-400">Total ${discrepancies.length} item selisih</span>
+                </div>
+                <div class="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
+                  ${topRowsHtml}
+                </div>
+              </div>
+            </div>
+
+            <div class="sticky bottom-0 z-10 px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-700 flex items-center gap-2">
+              <button id="btnAnalysisJumpToItems" type="button" class="flex-1 py-2 px-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs transition active:scale-95">
+                Lihat Daftar Barang ${escapeHtml(catDef.label)} →
+              </button>
+              <button id="soAnalysisCloseBottom" type="button" class="py-2 px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold text-xs">
+                Tutup
+              </button>
+            </div>
+          </div>
+        `;
+
+        modal.classList.remove('hidden');
+        document.getElementById('soAnalysisClose')?.addEventListener('click', closeSoCategoryAnalysis);
+        document.getElementById('soAnalysisCloseBottom')?.addEventListener('click', closeSoCategoryAnalysis);
+        document.getElementById('btnAnalysisJumpToItems')?.addEventListener('click', () => {
+          closeSoCategoryAnalysis();
+          const profEl = document.getElementById('profileFilter');
+          if (profEl) {
+            profEl.value = filterCatVal;
+            currentProfile = filterCatVal;
+          }
+          currentPage = 1;
+          switchMainView('count');
+          updateKPIs();
+          renderItems();
+        });
+      }
+
+      document.getElementById('soAnalysisClose')?.addEventListener('click', closeSoCategoryAnalysis);
+      document.getElementById('soAnalysisModal')?.addEventListener('click', ev => {
+        if (ev.target.id === 'soAnalysisModal') closeSoCategoryAnalysis();
+      });
+      document.addEventListener('keydown', ev => {
+        if (ev.key === 'Escape') closeSoCategoryAnalysis();
+      });
+
 </script>
 </body>
 </html>
