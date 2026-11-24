@@ -6572,10 +6572,17 @@
     }
 
     // Render items list for View 1
+    function getBranchScopedCountArchives() {
+      const activeBranch = normalizeBranchCode(getActiveBranchCode());
+      if (!Array.isArray(soArchives) || !activeBranch) return [];
+      return soArchives.filter(a => normalizeBranchCode(a && a.branch) === activeBranch);
+    }
+
     function getSelectedArchiveHistoryItem(currentItem) {
       if (!selectedCountArchiveHistoryId || !currentItem || !Array.isArray(soArchives)) return null;
+      const activeBranch = normalizeBranchCode(getActiveBranchCode());
       const archive = soArchives.find(a => String(a.archiveId || '') === String(selectedCountArchiveHistoryId));
-      if (!archive || !Array.isArray(archive.items)) return null;
+      if (!archive || normalizeBranchCode(archive.branch) !== activeBranch || !Array.isArray(archive.items)) return null;
       const normalized = archive.items.map(normalizeArchiveItemEntry).filter(Boolean);
       let match = normalized.find(it => Number(it.id) === Number(currentItem.id));
       if (!match) {
@@ -6714,25 +6721,31 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-1.5 py-2 px-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/40 text-center text-[11px] mb-2.5">
-            <div>
-              <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-semibold">Sistem</span>
-              <div class="font-bold text-slate-800 dark:text-slate-200 mt-0.5">${fmtNum(item.sysQty)}</div>
-              <div class="text-[10px] text-slate-500">${pSize > 1 ? formatDusSummary(item, item.sysQty) : 'pcs'}</div>
+          <div class="mb-2.5 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50/90 dark:bg-blue-950/35 px-2.5 py-2 text-center shadow-sm">
+            <div class="flex items-center justify-center gap-1 mb-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400"></span>
+              <span class="text-[9px] uppercase tracking-[0.12em] font-extrabold text-blue-800 dark:text-blue-200">Perhitungan SO Aktif</span>
             </div>
-            <div class="border-x border-slate-200 dark:border-slate-600">
-              <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-semibold">Fisik (SO)</span>
-              <div class="font-bold ${isCounted ? 'text-brand-600 dark:text-blue-400' : 'text-slate-400'} mt-0.5">
-                ${isCounted ? fmtNum(countQty) : '-'}
+            <div class="grid grid-cols-3 gap-1.5 text-[11px]">
+              <div>
+                <span class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 block font-bold">Sistem</span>
+                <div class="text-[14px] sm:text-[15px] font-extrabold text-slate-900 dark:text-white mt-0.5 tabular-nums">${fmtNum(item.sysQty)}</div>
+                <div class="text-[10px] text-slate-500 dark:text-slate-400">${pSize > 1 ? formatDusSummary(item, item.sysQty) : 'pcs'}</div>
               </div>
-              <div class="text-[10px] text-slate-500">${isCounted ? (pSize > 1 ? formatDusSummary(item, countQty) : 'pcs') : '-'}</div>
-            </div>
-            <div>
-              <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-semibold">Selisih</span>
-              <div class="font-bold ${!isCounted ? 'text-slate-400' : (diffQty > 0 ? 'text-blue-600 dark:text-blue-400' : (diffQty < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'))} mt-0.5">
-                ${!isCounted ? '-' : (diffQty > 0 ? '+' : '') + fmtNum(diffQty)}
+              <div class="border-x border-blue-200 dark:border-blue-800/80">
+                <span class="text-[10px] uppercase tracking-wider text-blue-700 dark:text-blue-300 block font-extrabold">Fisik (SO)</span>
+                <div class="text-[16px] sm:text-[17px] font-black ${isCounted ? 'text-blue-700 dark:text-blue-300' : 'text-slate-400'} mt-0.5 tabular-nums">
+                  ${isCounted ? fmtNum(countQty) : '-'}
+                </div>
+                <div class="text-[10px] text-slate-500 dark:text-slate-400">${isCounted ? (pSize > 1 ? formatDusSummary(item, countQty) : 'pcs') : '-'}</div>
               </div>
-              <div class="text-[10px] text-slate-500">${!isCounted ? '-' : (pSize > 1 ? formatDusSummary(item, diffQty) : 'pcs')}</div>
+              <div>
+                <span class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 block font-bold">Selisih</span>
+                <div class="text-[14px] sm:text-[15px] font-extrabold ${!isCounted ? 'text-slate-400' : (diffQty > 0 ? 'text-blue-700 dark:text-blue-300' : (diffQty < 0 ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'))} mt-0.5 tabular-nums">
+                  ${!isCounted ? '-' : (diffQty > 0 ? '+' : '') + fmtNum(diffQty)}
+                </div>
+                <div class="text-[10px] text-slate-500 dark:text-slate-400">${!isCounted ? '-' : (pSize > 1 ? formatDusSummary(item, diffQty) : 'pcs')}</div>
+              </div>
             </div>
           </div>
 
@@ -6743,7 +6756,7 @@
             const archiveDate = formatCountArchiveDisplayName(history.archive);
             const hDiff = Number(h.diffQty) || 0;
             const hDiffColor = Math.abs(hDiff) < 0.001 ? 'text-emerald-700 dark:text-emerald-300' : (hDiff > 0 ? 'text-sky-700 dark:text-sky-300' : 'text-rose-700 dark:text-rose-300');
-            return `<div class="mt-1.5 mb-2 rounded-lg border border-slate-200/80 dark:border-slate-600/70 bg-slate-50/90 dark:bg-slate-700/25 px-2 py-1.5">
+            return `<div class="mt-1.5 mb-2 rounded-lg border border-slate-200/70 dark:border-slate-700/60 bg-slate-50/65 dark:bg-slate-800/35 px-2 py-1.5 opacity-90">
               <div class="flex items-center justify-between gap-2 mb-1"><span class="text-[8px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">History SO</span><span class="text-[8px] font-semibold text-slate-400 dark:text-slate-500 truncate">${escapeHtml(archiveDate)}</span></div>
               <div class="grid grid-cols-3 gap-1 text-center leading-tight">
                 <div><span class="block text-[8px] text-slate-400">Sistem</span><b class="text-[9px] text-slate-600 dark:text-slate-300 tabular-nums">${fmtNum(h.sysQty)}</b></div>
@@ -8385,6 +8398,10 @@
 
       syncConfig.warehouseName = nextBranch;
       syncConfig.isLocked = isBranchLocked(nextBranch);
+      // Jangan membawa pilihan arsip cabang sebelumnya ke cabang yang baru dibuka.
+      selectedCountArchiveHistoryId = '';
+      const historySelect = document.getElementById('countArchiveHistorySelect');
+      if (historySelect) historySelect.value = '';
       hasSyncedFromSheet = false;
       saveSyncConfig();
 
@@ -8399,6 +8416,7 @@
       updateLockUI();
       updateKPIs();
       renderItems();
+      renderCountArchiveHistoryOptions('');
       if (currentMainView === 'recap') renderRecapView();
       if (currentMainView === 'analysis') renderAnalysisView();
 
@@ -8590,9 +8608,9 @@
           soArchives = Array.from(map.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
           saveSoArchivesToLocal();
           syncBranchDropdownOptions();
+          // Segarkan pemilih history setiap kali arsip tersinkron; daftar tetap dibatasi cabang aktif.
+          renderCountArchiveHistoryOptions(selectedCountArchiveHistoryId);
           if (currentRecapSubTab === 'archive_compare') renderArchiveAndComparisonView();
-          const historyViewer = document.getElementById('countArchiveHistoryViewer');
-          if (historyViewer && !historyViewer.classList.contains('hidden')) renderCountArchiveHistoryOptions(selectedCountArchiveHistoryId);
           if (manual) showToast(`Sinkronisasi arsip selesai (${soArchives.length} rekaman).`);
         }
       } catch (e) {
@@ -8889,7 +8907,7 @@
       return `${branch} - ${dateText || 'Tanggal tidak tersedia'}`;
     }
 
-    function renderCountArchiveHistoryPicker(sortedArchives = soArchives) {
+    function renderCountArchiveHistoryPicker(sortedArchives = getBranchScopedCountArchives()) {
       const nativeSel = document.getElementById('countArchiveHistorySelect');
       const label = document.getElementById('countArchiveHistoryPickerLabel');
       const options = document.getElementById('countArchiveHistoryPickerOptions');
@@ -8898,27 +8916,30 @@
       label.textContent = selected ? formatCountArchiveDisplayName(selected) : '-- Pilih arsip SO --';
       const query = (document.getElementById('countArchiveHistoryPickerSearch')?.value || '').trim().toLowerCase();
       const visible = sortedArchives.filter(a => !query || formatCountArchiveDisplayName(a).toLowerCase().includes(query));
-      options.innerHTML = visible.length ? visible.map(a => {
+      const noArchiveSelected = !selectedCountArchiveHistoryId && !nativeSel.value;
+      const clearChoice = `<button type="button" data-archive-id="" class="w-full flex items-center justify-between gap-3 px-3 py-2.5 mb-1 rounded-lg text-left ${noArchiveSelected ? 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}"><span class="text-xs font-bold">Tanpa history / Jangan pilih arsip</span><span class="text-[10px] font-bold">${noArchiveSelected ? '✓ Aktif' : 'Pilih'}</span></button>`;
+      options.innerHTML = clearChoice + (visible.length ? visible.map(a => {
         const isSelected = a.archiveId === (nativeSel.value || selectedCountArchiveHistoryId);
         const count = Number(a.countedItems || (Array.isArray(a.items) ? a.items.length : 0));
         return `<button type="button" data-archive-id="${escapeHtml(a.archiveId || '')}" class="w-full flex items-center justify-between gap-3 px-3 py-3 rounded-lg text-left ${isSelected ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-200' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}">
           <span class="min-w-0"><span class="block text-xs font-extrabold truncate">${escapeHtml(formatCountArchiveDisplayName(a))}</span><span class="block mt-0.5 text-[10px] font-normal text-slate-500 dark:text-slate-400">${escapeHtml(String(count))} item · ${escapeHtml(a.savedBy || 'ADMIN')}</span></span>
           <span class="shrink-0 text-[10px] font-bold ${isSelected ? 'text-indigo-600 dark:text-indigo-300' : 'text-slate-400'}">${isSelected ? '✓ Dipilih' : 'Pilih'}</span>
         </button>`;
-      }).join('') : '<div class="px-3 py-5 text-center text-xs font-normal text-slate-400">Arsip tidak ditemukan.</div>';
+      }).join('') : '<div class="px-3 py-4 text-center text-xs font-normal text-slate-400">Arsip tidak ditemukan.</div>');
     }
 
     function renderCountArchiveHistoryOptions(preferredId = '') {
       const sel = document.getElementById('countArchiveHistorySelect');
       if (!sel) return;
-      const previous = preferredId || selectedCountArchiveHistoryId || sel.value;
-      const sorted = soArchives.slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-      sel.innerHTML = '<option value="">-- Pilih arsip SO --</option>' + sorted.map(a => {
+      const previous = (arguments.length > 0) ? (preferredId || '') : (selectedCountArchiveHistoryId || sel.value || '');
+      // History pada tab Hitung hanya boleh mengambil arsip milik cabang yang sedang aktif.
+      const sorted = getBranchScopedCountArchives().slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      sel.innerHTML = '<option value="">Tanpa history / Jangan pilih arsip</option>' + sorted.map(a => {
         const label = formatCountArchiveDisplayName(a);
         return `<option value="${escapeHtml(a.archiveId || '')}">${escapeHtml(label)}</option>`;
       }).join('');
       if (previous && sorted.some(a => a.archiveId === previous)) sel.value = previous;
-      else if (sorted.length) sel.value = sorted[0].archiveId;
+      else sel.value = '';
       selectedCountArchiveHistoryId = sel.value || '';
       renderCountArchiveHistoryPicker(sorted);
       if (selectedCountArchiveHistoryId) renderSelectedCountArchiveHistory();
@@ -8926,7 +8947,7 @@
         const content = document.getElementById('countArchiveHistoryContent');
         const empty = document.getElementById('countArchiveHistoryEmpty');
         if (content) content.classList.add('hidden');
-        if (empty) { empty.classList.remove('hidden'); empty.textContent = 'Belum ada arsip SO yang tersedia.'; }
+        if (empty) { empty.classList.add('hidden'); empty.textContent = ''; }
         if (typeof renderItems === 'function') renderItems();
       }
     }
@@ -8934,13 +8955,14 @@
     function renderSelectedCountArchiveHistory() {
       const sel = document.getElementById('countArchiveHistorySelect');
       const archiveId = sel?.value || selectedCountArchiveHistoryId;
-      const arc = soArchives.find(a => a.archiveId === archiveId);
+      const activeBranch = normalizeBranchCode(getActiveBranchCode());
+      const arc = getBranchScopedCountArchives().find(a => String(a.archiveId || '') === String(archiveId) && normalizeBranchCode(a.branch) === activeBranch);
       const content = document.getElementById('countArchiveHistoryContent');
       const empty = document.getElementById('countArchiveHistoryEmpty');
       if (!arc) {
         selectedCountArchiveHistoryId = '';
         if (content) content.classList.add('hidden');
-        if (empty) { empty.classList.remove('hidden'); empty.textContent = 'Pilih arsip SO untuk menampilkan hasil historis pada setiap barang.'; }
+        if (empty) { empty.classList.add('hidden'); empty.textContent = ''; }
         if (typeof renderItems === 'function') renderItems();
         return;
       }
