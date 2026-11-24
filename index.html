@@ -209,14 +209,6 @@
         <span>Pengaturan</span>
       </button>
 
-      <!-- Toggle Ringkasan Dashboard -->
-      <button id="btnToggleDashboard" class="px-2 py-1 rounded-lg bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/50 border border-sky-200/70 dark:border-sky-800/50 transition flex items-center gap-1 text-[10px] sm:text-[11px] font-bold shrink-0 active:scale-95" title="Tampilkan / Sembunyikan Ringkasan">
-        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-        </svg>
-        <span class="hidden sm:inline">Ringkasan</span>
-      </button>
-
       <!-- Dark Mode Toggle -->
       <button id="btnToggleTheme" class="p-1.5 rounded-lg bg-amber-50 dark:bg-slate-700 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-slate-600 border border-amber-200/60 dark:border-slate-600 transition shrink-0 active:scale-95" title="Ganti Tema Terang / Gelap">
         <svg id="themeIconSun" class="w-3.5 h-3.5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -242,6 +234,12 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
           </svg>
           <span class="truncate"><span class="sm:hidden">Hitung</span><span class="hidden sm:inline">Daftar Hitung SO</span></span>
+        </button>
+
+        <!-- Tab Dashboard SO -->
+        <button id="tabBtnDashboard" class="flex-1 min-w-0 py-2 px-1.5 sm:px-3 rounded-xl font-bold text-[11px] sm:text-sm flex items-center justify-center gap-1 transition bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600">
+          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18M7 14l4-4 4 4 6-7"/></svg>
+          <span class="truncate">Dashboard SO</span>
         </button>
 
         <!-- Tab 2: Rekap Hasil SO -->
@@ -333,6 +331,113 @@
       </section>
       
       <!-- KPI SUMMARY DASHBOARD (Collapsible) -->
+
+
+      <!-- SEARCH & FILTER TOOLBAR -->
+      <section class="bg-white dark:bg-slate-800 rounded-2xl p-3 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col gap-2.5">
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+          <input 
+            id="searchInput" 
+            type="text" 
+            placeholder="Cari nama barang, kategori, tipe, batch (cth: ACP, Glazing, Godia, J/26)..." 
+            class="w-full pl-9 pr-8 py-2 text-sm bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400"
+          />
+          <button id="btnClearSearch" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hidden">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Quick Status Filter Pills -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-xs">
+          <button data-filter="all" class="status-filter-btn px-3 py-1.5 rounded-xl font-medium shrink-0 bg-brand-600 text-white shadow-sm transition">
+            Semua (<span id="pillCountAll">923</span>)
+          </button>
+          <button data-filter="instock" class="status-filter-btn px-3 py-1.5 rounded-xl font-medium shrink-0 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
+            Ada Stok (<span id="pillCountInStock">0</span>)
+          </button>
+          <button data-filter="pending" class="status-filter-btn px-3 py-1.5 rounded-xl font-medium shrink-0 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
+            Belum Dihitung (<span id="pillCountPending">923</span>)
+          </button>
+          <button data-filter="variance" class="status-filter-btn px-3 py-1.5 rounded-xl font-medium shrink-0 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
+            Ada Selisih (<span id="pillCountVariance">0</span>)
+          </button>
+          <button data-filter="counted" class="status-filter-btn px-3 py-1.5 rounded-xl font-medium shrink-0 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
+            Sudah Dihitung (<span id="pillCountCounted">0</span>)
+          </button>
+          <button data-filter="match" class="status-filter-btn px-3 py-1.5 rounded-xl font-medium shrink-0 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
+            Cocok (<span id="pillCountMatch">0</span>)
+          </button>
+          <button data-filter="custom" class="status-filter-btn px-3 py-1.5 rounded-xl font-medium shrink-0 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
+            Temuan Baru (<span id="pillCountCustom">0</span>)
+          </button>
+        </div>
+
+        <!-- Secondary Filters Row -->
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <select id="profileFilter" class="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500">
+            <option value="all">Semua Kategori (6)</option>
+            <option value="ACP">ACP</option>
+            <option value="Sealant">Sealant</option>
+            <option value="Sunsulate">Sunsulate</option>
+            <option value="Godia">Godia</option>
+            <option value="Rooftop">Rooftop</option>
+            <option value="Accessories">Accessories (Acc)</option>
+            <option value="Lainnya">Lain-lain</option>
+          </select>
+
+          <select id="sortSelect" class="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500">
+            <option value="id-asc">Urutkan: No. Urut (1-923)</option>
+            <option value="name-asc">Urutkan: Nama (A - Z)</option>
+            <option value="variance-desc">Urutkan: Selisih Terbesar</option>
+            <option value="qty-desc">Urutkan: QTY Terbesar</option>
+            <option value="cat-asc">Urutkan: Kategori (A - Z)</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- LIST OF ITEMS HEADER & COUNTER -->
+      <div class="flex items-center justify-between px-1 text-xs text-slate-500 dark:text-slate-400">
+        <div>Menampilkan <span id="filteredCountText" class="font-bold text-slate-800 dark:text-slate-200">0</span> item</div>
+        <div id="paginationSummary" class="text-slate-500">Hal 1 dari 1</div>
+      </div>
+
+      <!-- PRODUCT CARDS CONTAINER -->
+      <section id="itemsContainer" class="flex flex-col gap-2.5">
+        <!-- Item cards rendered dynamically -->
+      </section>
+
+      <!-- PAGINATION CONTROLS -->
+      <div id="paginationControls" class="flex items-center justify-center gap-2 py-3">
+        <button id="btnPrevPage" class="px-3.5 py-1.5 text-xs font-medium rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 disabled:opacity-40 transition">
+          ← Sebelumnya
+        </button>
+        <span id="pageIndicator" class="text-xs font-semibold px-2 text-slate-600 dark:text-slate-400">
+          Halaman 1 / 1
+        </span>
+        <button id="btnNextPage" class="px-3.5 py-1.5 text-xs font-medium rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 disabled:opacity-40 transition">
+          Selanjutnya →
+        </button>
+      </div>
+
+    </div>
+
+
+
+    <!-- ========================================== -->
+    <!-- VIEW DASHBOARD SO (RINGKASAN & ANALISA KATEGORI) -->
+    <!-- ========================================== -->
+    <div id="viewDashboard" class="hidden flex-col gap-3">
+      <div class="px-1">
+        <h2 class="text-sm sm:text-base font-black text-slate-800 dark:text-white">Dashboard Stock Opname</h2>
+        <p class="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Ringkasan progres, akurasi, dan selisih SO untuk cabang aktif.</p>
+      </div>
       <section id="dashboardPanel" class="bg-white dark:bg-slate-800 rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-200 dark:border-slate-700 transition-all space-y-2.5">
         <!-- Header Ringkasan + Mode SO Badge + Progress -->
         <div class="flex flex-wrap items-center justify-between gap-1.5">
@@ -482,100 +587,6 @@
           </div>
         </div>
       </section>
-
-      <!-- SEARCH & FILTER TOOLBAR -->
-      <section class="bg-white dark:bg-slate-800 rounded-2xl p-3 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col gap-2.5">
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-          </div>
-          <input 
-            id="searchInput" 
-            type="text" 
-            placeholder="Cari nama barang, kategori, tipe, batch (cth: ACP, Glazing, Godia, J/26)..." 
-            class="w-full pl-9 pr-8 py-2 text-sm bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400"
-          />
-          <button id="btnClearSearch" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hidden">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-
-        <!-- Quick Status Filter Pills -->
-        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-xs">
-          <button data-filter="all" class="status-filter-btn px-3 py-1.5 rounded-xl font-medium shrink-0 bg-brand-600 text-white shadow-sm transition">
-            Semua (<span id="pillCountAll">923</span>)
-          </button>
-          <button data-filter="instock" class="status-filter-btn px-3 py-1.5 rounded-xl font-medium shrink-0 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
-            Ada Stok (<span id="pillCountInStock">0</span>)
-          </button>
-          <button data-filter="pending" class="status-filter-btn px-3 py-1.5 rounded-xl font-medium shrink-0 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
-            Belum Dihitung (<span id="pillCountPending">923</span>)
-          </button>
-          <button data-filter="variance" class="status-filter-btn px-3 py-1.5 rounded-xl font-medium shrink-0 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
-            Ada Selisih (<span id="pillCountVariance">0</span>)
-          </button>
-          <button data-filter="counted" class="status-filter-btn px-3 py-1.5 rounded-xl font-medium shrink-0 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
-            Sudah Dihitung (<span id="pillCountCounted">0</span>)
-          </button>
-          <button data-filter="match" class="status-filter-btn px-3 py-1.5 rounded-xl font-medium shrink-0 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
-            Cocok (<span id="pillCountMatch">0</span>)
-          </button>
-          <button data-filter="custom" class="status-filter-btn px-3 py-1.5 rounded-xl font-medium shrink-0 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
-            Temuan Baru (<span id="pillCountCustom">0</span>)
-          </button>
-        </div>
-
-        <!-- Secondary Filters Row -->
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <select id="profileFilter" class="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500">
-            <option value="all">Semua Kategori (6)</option>
-            <option value="ACP">ACP</option>
-            <option value="Sealant">Sealant</option>
-            <option value="Sunsulate">Sunsulate</option>
-            <option value="Godia">Godia</option>
-            <option value="Rooftop">Rooftop</option>
-            <option value="Accessories">Accessories (Acc)</option>
-            <option value="Lainnya">Lain-lain</option>
-          </select>
-
-          <select id="sortSelect" class="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500">
-            <option value="id-asc">Urutkan: No. Urut (1-923)</option>
-            <option value="name-asc">Urutkan: Nama (A - Z)</option>
-            <option value="variance-desc">Urutkan: Selisih Terbesar</option>
-            <option value="qty-desc">Urutkan: QTY Terbesar</option>
-            <option value="cat-asc">Urutkan: Kategori (A - Z)</option>
-          </select>
-        </div>
-      </section>
-
-      <!-- LIST OF ITEMS HEADER & COUNTER -->
-      <div class="flex items-center justify-between px-1 text-xs text-slate-500 dark:text-slate-400">
-        <div>Menampilkan <span id="filteredCountText" class="font-bold text-slate-800 dark:text-slate-200">0</span> item</div>
-        <div id="paginationSummary" class="text-slate-500">Hal 1 dari 1</div>
-      </div>
-
-      <!-- PRODUCT CARDS CONTAINER -->
-      <section id="itemsContainer" class="flex flex-col gap-2.5">
-        <!-- Item cards rendered dynamically -->
-      </section>
-
-      <!-- PAGINATION CONTROLS -->
-      <div id="paginationControls" class="flex items-center justify-center gap-2 py-3">
-        <button id="btnPrevPage" class="px-3.5 py-1.5 text-xs font-medium rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 disabled:opacity-40 transition">
-          ← Sebelumnya
-        </button>
-        <span id="pageIndicator" class="text-xs font-semibold px-2 text-slate-600 dark:text-slate-400">
-          Halaman 1 / 1
-        </span>
-        <button id="btnNextPage" class="px-3.5 py-1.5 text-xs font-medium rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 disabled:opacity-40 transition">
-          Selanjutnya →
-        </button>
-      </div>
-
     </div>
 
     <!-- ========================================== -->
@@ -3969,10 +3980,12 @@
       }
       currentMainView = view;
       const tabCount = document.getElementById('tabBtnCount');
+      const tabDashboard = document.getElementById('tabBtnDashboard');
       const tabRecap = document.getElementById('tabBtnRecap');
       const tabAna = document.getElementById('tabBtnAnalysis');
       const tabProdDb = document.getElementById('tabBtnProductDb');
       const viewCountEl = document.getElementById('viewCount');
+      const viewDashboardEl = document.getElementById('viewDashboard');
       const viewRecapEl = document.getElementById('viewRecap');
       const viewAnaEl = document.getElementById('viewAnalysis');
       const viewProdDbEl = document.getElementById('viewProductDb');
@@ -3981,6 +3994,7 @@
       const inactiveCls = 'flex-1 min-w-0 py-2 px-1.5 sm:px-3 rounded-xl font-bold text-[11px] sm:text-sm flex items-center justify-center gap-1 transition bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600';
 
       tabCount.className = view === 'count' ? activeCls : inactiveCls;
+      if (tabDashboard) tabDashboard.className = view === 'dashboard' ? activeCls : inactiveCls;
       tabRecap.className = view === 'recap' ? activeCls : inactiveCls;
       if (tabAna) {
         tabAna.className = (view === 'analysis'
@@ -3996,6 +4010,10 @@
       }
 
       viewCountEl.classList.toggle('hidden', view !== 'count');
+      if (viewDashboardEl) {
+        viewDashboardEl.classList.toggle('hidden', view !== 'dashboard');
+        viewDashboardEl.classList.toggle('flex', view === 'dashboard');
+      }
       viewRecapEl.classList.toggle('hidden', view !== 'recap');
       if (viewAnaEl) {
         viewAnaEl.classList.toggle('hidden', view !== 'analysis');
@@ -10365,6 +10383,7 @@
 
       // Main Navigation Tabs
       document.getElementById('tabBtnCount').addEventListener('click', () => switchMainView('count'));
+      document.getElementById('tabBtnDashboard').addEventListener('click', () => switchMainView('dashboard'));
       document.getElementById('tabBtnRecap').addEventListener('click', () => switchMainView('recap'));
       document.getElementById('tabBtnAnalysis').addEventListener('click', () => switchMainView('analysis'));
       document.getElementById('btnExportAdjustmentExcel').addEventListener('click', exportAdjustmentToExcel);
@@ -10551,11 +10570,6 @@
 
       // Top Actions Listeners
       document.getElementById('btnToggleTheme').addEventListener('click', toggleTheme);
-      
-      const dashboardPanel = document.getElementById('dashboardPanel');
-      document.getElementById('btnToggleDashboard').addEventListener('click', () => {
-        dashboardPanel.classList.toggle('hidden');
-      });
       
       document.getElementById('btnExport').addEventListener('click', () => {
         if ((syncConfig.checker || '').trim().toUpperCase() !== 'ANDRI') {
