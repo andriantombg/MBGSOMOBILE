@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="MBG SO Mobile" />
-  <meta name="mbg-app-version" content="26.11.64" />
+  <meta name="mbg-app-version" content="26.11.67" />
   <link id="pwaManifestLink" rel="manifest" href="" />
   <link id="pwaAppleIcon" rel="apple-touch-icon" href="" />
   <link id="pwaFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%231e3a8a'/%3E%3Ctext x='96' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='56' fill='%23ffffff'%3ENII%3C/text%3E%3Ctext x='96' y='142' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='40' fill='%2393c5fd'%3ESO%3C/text%3E%3C/svg%3E" />
@@ -1218,13 +1218,13 @@
             <span>←</span>
             <span>Kembali</span>
           </button>
-          <label class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition active:scale-95" title="Import Tambahan Barang Baru dari file Excel (.xlsx) — otomatis memfilter nama barang yang belum ada">
+          <button id="btnTriggerImportProductDbExcel" type="button" class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition active:scale-95" title="Import Tambahan Barang Baru dari file Excel (.xlsx / .xls / .csv) — otomatis memfilter nama barang yang belum ada">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
             </svg>
             <span>Import Excel</span>
-            <input id="inputImportProductDbExcel" type="file" accept=".xlsx,.xls" class="hidden"/>
-          </label>
+          </button>
+          <input id="inputImportProductDbExcel" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0;" />
           <button id="btnExportProductDbExcel" type="button" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition active:scale-95">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -1236,6 +1236,12 @@
           </button>
         </div>
       </section>
+
+      <!-- STATUS HASIL IMPORT / SINKRONISASI DATABASE BARANG -->
+      <div id="productDbImportStatusBanner" class="hidden rounded-2xl px-3.5 py-2.5 border text-xs font-semibold flex items-center justify-between gap-2">
+        <span id="productDbImportStatusText">-</span>
+        <button type="button" onclick="document.getElementById('productDbImportStatusBanner').classList.add('hidden')" class="text-[11px] font-extrabold opacity-70 hover:opacity-100 px-1.5">✕</button>
+      </div>
 
       <!-- FORM TAMBAH / EDIT ITEM KE DATABASE BARANG -->
       <section class="bg-white dark:bg-slate-800 rounded-2xl p-3.5 shadow-sm border border-slate-200 dark:border-slate-700 space-y-2.5">
@@ -1885,8 +1891,12 @@
               </svg>
               Setup User &amp; Hak Akses Cabang Login
             </span>
-            <span id="userAccessCountBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">0 User</span>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button id="btnSyncUserAccessNow" type="button" class="px-2 py-0.5 rounded-full bg-white dark:bg-slate-800 border border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-100 text-[10px] font-bold transition" title="Sinkronisasi Daftar User dengan Google Sheets">🔄 Sync</button>
+              <span id="userAccessCountBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">0 User</span>
+            </div>
           </div>
+          <div id="userAccessOnlineSyncStatus" class="hidden px-2.5 py-1.5 rounded-lg text-[10px] font-semibold"></div>
 
           <p class="text-[11px] text-purple-800/80 dark:text-purple-300/90 leading-snug">
             Atur user mana saja yang hanya diizinkan login pada cabang tertentu, atau pilih <b>Semua Cabang (Full Akses)</b>.
@@ -2123,7 +2133,7 @@
             </svg>
             <span>Share HTML</span>
           </button>
-          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.64</span>
+          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.67</span>
         </div>
       </div>
     </div>
@@ -2420,7 +2430,7 @@
       productDatabase = INITIAL_PRODUCT_DATABASE.map(x => ({ ...x }));
     }
 
-    function saveProductDatabase() {
+    function saveProductDatabase(pushToSheet = true) {
       try {
         localStorage.setItem(PRODUCT_DB_STORAGE_KEY, JSON.stringify(productDatabase));
       } catch (e) {}
@@ -2428,6 +2438,38 @@
       const nameInp = document.getElementById('newPropName');
       if (typeof renderAddItemAutocompleteDropdown === 'function') {
         renderAddItemAutocompleteDropdown(nameInp ? nameInp.value : '', false);
+      }
+      if (pushToSheet && typeof syncConfig !== 'undefined' && syncConfig.url && (syncConfig.checker || '').trim().toUpperCase() === 'ANDRI') {
+        pushItemToGoogleSheets({
+          action: 'save_product_database',
+          checker: 'ANDRI',
+          productDatabase: productDatabase
+        });
+      }
+    }
+
+    function applyServerProductDatabase(serverList) {
+      if (!Array.isArray(serverList) || serverList.length === 0) return;
+      const normalizeItemKey = (str) => String(str || '').trim().replace(/\s+/g, ' ').toUpperCase();
+      const map = new Map();
+      productDatabase.forEach(item => {
+        const k = normalizeItemKey(item && item.name);
+        if (k) map.set(k, { name: String(item.name).trim().replace(/\s+/g, ' '), unit: String(item.unit || 'PCS').trim().toUpperCase() || 'PCS' });
+      });
+      let addedFromServer = 0;
+      serverList.forEach(item => {
+        const k = normalizeItemKey(item && item.name);
+        if (k && !map.has(k)) {
+          map.set(k, { name: String(item.name).trim().replace(/\s+/g, ' '), unit: String(item.unit || 'PCS').trim().toUpperCase() || 'PCS' });
+          addedFromServer++;
+        }
+      });
+      if (addedFromServer > 0) {
+        productDatabase = Array.from(map.values());
+        saveProductDatabase(false);
+        if (currentMainView === 'product_db' && typeof renderProductDbView === 'function') {
+          renderProductDbView();
+        }
       }
     }
 
@@ -3062,19 +3104,92 @@
       }
     }
 
-    function saveUserAccessConfig(pushToSheet = true) {
+    function setUserAccessSyncBanner(msg, type = 'info') {
+      const el = document.getElementById('userAccessOnlineSyncStatus');
+      if (!el) return;
+      el.innerHTML = msg;
+      el.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-800', 'border', 'border-emerald-200', 'dark:bg-emerald-950/60', 'dark:text-emerald-200', 'dark:border-emerald-800', 'bg-amber-50', 'text-amber-800', 'border-amber-200', 'dark:bg-amber-950/60', 'dark:text-amber-200', 'dark:border-amber-800', 'bg-rose-50', 'text-rose-800', 'border-rose-200', 'dark:bg-rose-950/60', 'dark:text-rose-200', 'dark:border-rose-800');
+      if (type === 'success') {
+        el.classList.add('bg-emerald-50', 'text-emerald-800', 'border', 'border-emerald-200', 'dark:bg-emerald-950/60', 'dark:text-emerald-200', 'dark:border-emerald-800');
+      } else if (type === 'warn') {
+        el.classList.add('bg-amber-50', 'text-amber-800', 'border', 'border-amber-200', 'dark:bg-amber-950/60', 'dark:text-amber-200', 'dark:border-amber-800');
+      } else {
+        el.classList.add('bg-rose-50', 'text-rose-800', 'border', 'border-rose-200', 'dark:bg-rose-950/60', 'dark:text-rose-200', 'dark:border-rose-800');
+      }
+    }
+
+    async function saveUserAccessConfig(pushToSheet = true) {
       if (!FULL_ACCESS_USERS.includes('ANDRI')) FULL_ACCESS_USERS.unshift('ANDRI');
-      writeUserAccessStorage(Date.now());
+      // Pastikan user aktif tidak tersangkut di DELETED_CUSTOM_USERS
+      const activeSet = new Set([...FULL_ACCESS_USERS, ...Object.keys(USER_BRANCH_ACCESS_MAP)]);
+      DELETED_CUSTOM_USERS = (DELETED_CUSTOM_USERS || []).filter(u => u && u !== 'ANDRI' && !activeSet.has(u));
+
+      const nowTs = Date.now();
+      writeUserAccessStorage(nowTs);
       syncBranchDropdownOptions();
+
       if (pushToSheet && syncConfig.url) {
-        pushItemToGoogleSheets({
+        setUserAccessSyncBanner('⏳ Menyimpan daftar user &amp; hak akses cabang secara online ke Google Sheets...', 'warn');
+        const payload = {
           action: 'save_user_access',
-          checker: syncConfig.checker || 'ANDRI',
+          checker: (syncConfig.checker || 'ANDRI').trim().toUpperCase(),
           fullAccessUsers: FULL_ACCESS_USERS,
           branchMap: USER_BRANCH_ACCESS_MAP,
-          deletedUsers: DELETED_CUSTOM_USERS
-        });
+          deletedUsers: DELETED_CUSTOM_USERS,
+          updatedAt: nowTs
+        };
+        try {
+          const res = await fetch(syncConfig.url, {
+            method: 'POST',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+          });
+          const rawText = await res.text();
+          let json = null;
+          try { json = JSON.parse(rawText); } catch (_) {}
+          if (res.ok && json && json.status === 'ok') {
+            setUserAccessSyncBanner('✅ Tersimpan Online di Google Sheets! User baru langsung bisa login dari semua HP cabang.', 'success');
+            return true;
+          } else {
+            const errDetail = (json && json.message) ? json.message : `HTTP ${res.status}`;
+            setUserAccessSyncBanner(`⚠️ Tersimpan lokal, tetapi server GSheet merespons: ${escapeHtml(errDetail)}. Pastikan Web App GAS sudah versi terbaru.`, 'error');
+            pushItemToGoogleSheets(payload);
+            return false;
+          }
+        } catch (err) {
+          setUserAccessSyncBanner('⚠️ Koneksi terputus: tersimpan di perangkat lokal &amp; masuk antrean upload otomatis saat online.', 'warn');
+          pushItemToGoogleSheets(payload);
+          return false;
+        }
       }
+      return true;
+    }
+
+    let isFetchingOnlineUserAccess = false;
+    async function fetchOnlineUserAccessConfig(forceNotify = false) {
+      if (!syncConfig.url || isFetchingOnlineUserAccess) return false;
+      isFetchingOnlineUserAccess = true;
+      try {
+        const res = await fetch(`${syncConfig.url}?action=get_user_access&branch=${encodeURIComponent(getActiveBranchCode())}&t=${Date.now()}`, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+        if (!res.ok) return false;
+        const json = await res.json();
+        if (json && json.status === 'ok' && json.userAccess && typeof json.userAccess === 'object') {
+          applyServerUserAccessConfig(json.userAccess);
+          if (forceNotify) {
+            setUserAccessSyncBanner(`✅ Daftar user berhasil disinkronkan dari Google Sheets (${FULL_ACCESS_USERS.length + Object.keys(USER_BRANCH_ACCESS_MAP).length} user aktif).`, 'success');
+            showToast('Daftar user & hak akses berhasil diperbarui dari server!');
+          }
+          return true;
+        }
+      } catch (e) {
+      } finally {
+        isFetchingOnlineUserAccess = false;
+      }
+      return false;
     }
 
     function applyServerUserAccessConfig(serverAccess) {
@@ -3083,8 +3198,10 @@
 
       if (Array.isArray(serverAccess.deletedUsers)) {
         const srvDel = serverAccess.deletedUsers.map(u => String(u || '').trim().toUpperCase()).filter(u => u && u !== 'ANDRI');
-        if (srvDel.length > 0) {
-          DELETED_CUSTOM_USERS = Array.from(new Set([...DELETED_CUSTOM_USERS, ...srvDel]));
+        const mergedDel = Array.from(new Set([...DELETED_CUSTOM_USERS, ...srvDel]));
+        if (JSON.stringify(mergedDel) !== JSON.stringify(DELETED_CUSTOM_USERS)) {
+          DELETED_CUSTOM_USERS = mergedDel;
+          changed = true;
         }
       }
 
@@ -3123,7 +3240,7 @@
       }
 
       if (changed) {
-        writeUserAccessStorage(Date.now());
+        writeUserAccessStorage(Number(serverAccess.updatedAt) || Date.now());
         syncBranchDropdownOptions();
         if (!document.getElementById('settingsModal').classList.contains('hidden')) {
           renderSetupUserAccessUI();
@@ -8869,7 +8986,7 @@
       } catch (e) {}
     }
 
-    const DEFAULT_APP_BUILD_NUMBER = '64';
+    const DEFAULT_APP_BUILD_NUMBER = '67';
 
     function getDynamicAppVersionCode() {
       let buildNum = DEFAULT_APP_BUILD_NUMBER;
@@ -8895,6 +9012,9 @@
 
     function openLoginModal(allowCancel = false) {
       updateLoginVersionBadge();
+      if (syncConfig.url && typeof fetchOnlineUserAccessConfig === 'function') {
+        fetchOnlineUserAccessConfig(false);
+      }
       const lastLogin = getSavedLastLoginProfile();
       const prefillUser = (syncConfig.checker || (lastLogin && lastLogin.user) || '').trim().toUpperCase();
       const prefillDiv = (syncConfig.division || (lastLogin && lastLogin.division) || '').trim();
@@ -9067,6 +9187,9 @@
           }
           if (json.quickBatch && typeof json.quickBatch === 'object') {
             applyServerQuickBatchConfig(json.quickBatch);
+          }
+          if (Array.isArray(json.productDatabase) && json.productDatabase.length > 0) {
+            applyServerProductDatabase(json.productDatabase);
           }
           const respBranch = normalizeBranchCode(json.branch || getActiveBranchCode()) || getActiveBranchCode();
           if (respBranch === getActiveBranchCode()) {
@@ -10161,14 +10284,23 @@
       });
 
 
-      document.getElementById('btnSubmitLogin').addEventListener('click', () => {
+      document.getElementById('btnSubmitLogin').addEventListener('click', async () => {
         const uName = document.getElementById('loginUserName').value.trim().toUpperCase();
-        const uBranch = (document.getElementById('loginBranchName')?.value || '').trim().toUpperCase();
+        let uBranch = (document.getElementById('loginBranchName')?.value || '').trim().toUpperCase();
         const uDiv = document.getElementById('loginUserDivision').value.trim();
         if (!uName) {
           showToast('Nama User wajib diisi sebelum memulai SO', false);
           document.getElementById('loginUserName').focus();
           return;
+        }
+        if (!isRegisteredUser(uName) && syncConfig.url) {
+          const btnSub = document.getElementById('btnSubmitLogin');
+          if (btnSub) btnSub.disabled = true;
+          showToast(`Mengkroscek akun "${uName}" ke server...`);
+          await fetchOnlineUserAccessConfig(false);
+          syncBranchDropdownOptions();
+          uBranch = (document.getElementById('loginBranchName')?.value || '').trim().toUpperCase();
+          if (btnSub) btnSub.disabled = false;
         }
         if (!isRegisteredUser(uName)) {
           showToast(`Akses ditolak! User "${uName}" belum ditambahkan di Setup User. Hubungi Admin (ANDRI).`, false);
@@ -10226,6 +10358,9 @@
       }
 
       document.getElementById('btnSettings').addEventListener('click', () => {
+        if (syncConfig.url && typeof fetchOnlineUserAccessConfig === 'function') {
+          fetchOnlineUserAccessConfig(false);
+        }
         if ((syncConfig.checker || '').trim().toUpperCase() !== 'ANDRI') return;
         document.getElementById('inputCheckerName').value = syncConfig.checker || '';
         document.getElementById('inputCheckerDivision').value = syncConfig.division || '';
@@ -10248,6 +10383,7 @@
       });
 
       document.getElementById('btnResetSetupUserForm').addEventListener('click', resetSetupUserForm);
+      document.getElementById('btnSyncUserAccessNow')?.addEventListener('click', () => fetchOnlineUserAccessConfig(true));
 
       document.getElementById('inputSearchSetupUser').addEventListener('input', renderSetupUserAccessUI);
 
@@ -10271,6 +10407,8 @@
           showToast('Pilih minimal 1 cabang atau centang "Semua Cabang"!', false);
           return;
         }
+
+        DELETED_CUSTOM_USERS = (DELETED_CUSTOM_USERS || []).filter(u => u !== rawUser);
 
         if (isFull) {
           if (!FULL_ACCESS_USERS.includes(rawUser)) {
@@ -10545,6 +10683,18 @@ function doGet(e) {
   var props = PropertiesService.getScriptProperties();
   var action = (e && e.parameter && e.parameter.action) ? String(e.parameter.action) : '';
 
+  if (action === 'get_user_access') {
+    var uaResp = null;
+    try {
+      var rawUaFast = props.getProperty('USER_BRANCH_ACCESS_MAP_V1');
+      if (rawUaFast) uaResp = JSON.parse(rawUaFast);
+    } catch (errFast) {}
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'ok',
+      userAccess: uaResp
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
   if (action === 'get_so_archives') {
     var arcSheet = getOrCreateArchiveSheet_(ss);
     var lastR = arcSheet.getLastRow();
@@ -10685,6 +10835,11 @@ function doGet(e) {
     var rawQB = props.getProperty('QUICK_BATCH_CFG_V1');
     if (rawQB) quickBatchObj = JSON.parse(rawQB);
   } catch (err) {}
+  var productDbList = null;
+  try {
+    var rawPDB = props.getProperty('PRODUCT_DATABASE_V1');
+    if (rawPDB) productDbList = JSON.parse(rawPDB);
+  } catch (err) {}
 
   return ContentService.createTextOutput(JSON.stringify({
     status: 'ok',
@@ -10696,6 +10851,7 @@ function doGet(e) {
     onlineUsers: onlineUsers,
     userAccess: userAccessObj,
     quickBatch: quickBatchObj,
+    productDatabase: productDbList,
     availableBranches: Object.keys(allBranchesMap),
     items: items,
     logs: logs
@@ -10717,6 +10873,7 @@ function doPost(e) {
       props.setProperty('USER_BRANCH_ACCESS_MAP_V1', JSON.stringify({
         fullAccessUsers: data.fullAccessUsers || ['ANDRI'],
         branchMap: data.branchMap || {},
+        deletedUsers: Array.isArray(data.deletedUsers) ? data.deletedUsers : [],
         updatedAt: Date.now()
       }));
       return ContentService.createTextOutput(JSON.stringify({ status: 'ok', action: 'save_user_access' }))
@@ -10734,6 +10891,16 @@ function doPost(e) {
         updatedAt: Date.now()
       }));
       return ContentService.createTextOutput(JSON.stringify({ status: 'ok', action: 'save_quick_batch' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (data.action === 'save_product_database') {
+      if (String(data.checker || '').trim().toUpperCase() !== 'ANDRI') {
+        return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unauthorized' }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      props.setProperty('PRODUCT_DATABASE_V1', JSON.stringify(Array.isArray(data.productDatabase) ? data.productDatabase : []));
+      return ContentService.createTextOutput(JSON.stringify({ status: 'ok', action: 'save_product_database' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -12138,45 +12305,62 @@ function doPost(e) {
         showToast('Excel Database Barang diunduh!');
       });
 
+      function setProductDbStatusBanner(msg, type = 'info') {
+        const banner = document.getElementById('productDbImportStatusBanner');
+        const txt = document.getElementById('productDbImportStatusText');
+        if (!banner || !txt) return;
+        txt.innerHTML = msg;
+        banner.classList.remove('hidden', 'bg-emerald-50', 'border-emerald-300', 'text-emerald-800', 'dark:bg-emerald-950/60', 'dark:border-emerald-800', 'dark:text-emerald-200', 'bg-amber-50', 'border-amber-300', 'text-amber-800', 'dark:bg-amber-950/60', 'dark:border-amber-800', 'dark:text-amber-200', 'bg-rose-50', 'border-rose-300', 'text-rose-800', 'dark:bg-rose-950/60', 'dark:border-rose-800', 'dark:text-rose-200');
+        if (type === 'success') {
+          banner.classList.add('bg-emerald-50', 'border-emerald-300', 'text-emerald-800', 'dark:bg-emerald-950/60', 'dark:border-emerald-800', 'dark:text-emerald-200');
+        } else if (type === 'warn') {
+          banner.classList.add('bg-amber-50', 'border-amber-300', 'text-amber-800', 'dark:bg-amber-950/60', 'dark:border-amber-800', 'dark:text-amber-200');
+        } else {
+          banner.classList.add('bg-rose-50', 'border-rose-300', 'text-rose-800', 'dark:bg-rose-950/60', 'dark:border-rose-800', 'dark:text-rose-200');
+        }
+      }
+
+      document.getElementById('btnTriggerImportProductDbExcel')?.addEventListener('click', () => {
+        const isAndri = (syncConfig.checker || '').trim().toUpperCase() === 'ANDRI';
+        if (!isAndri) {
+          showToast('Hanya user ANDRI yang dapat mengimport Database Barang.', false);
+          return;
+        }
+        const inp = document.getElementById('inputImportProductDbExcel');
+        if (!inp) {
+          showToast('Input file tidak ditemukan.', false);
+          return;
+        }
+        inp.value = '';
+        inp.click();
+      });
+
       document.getElementById('inputImportProductDbExcel')?.addEventListener('change', (e) => {
         const isAndri = (syncConfig.checker || '').trim().toUpperCase() === 'ANDRI';
-        const file = e.target.files[0];
-        if (!isAndri || !file || typeof XLSX === 'undefined') return;
+        const file = e.target && e.target.files ? e.target.files[0] : null;
+        if (!file) return;
+        if (!isAndri) {
+          showToast('Hanya user ANDRI yang dapat mengimport Database Barang.', false);
+          e.target.value = '';
+          return;
+        }
+        if (typeof XLSX === 'undefined') {
+          showToast('Library Excel belum siap, pastikan koneksi internet aktif lalu coba lagi.', false);
+          setProductDbStatusBanner('Gagal: Library Excel (SheetJS) belum termuat. Periksa koneksi internet lalu muat ulang halaman.', 'error');
+          e.target.value = '';
+          return;
+        }
+        setProductDbStatusBanner(`Membaca file <b>${escapeHtml(file.name)}</b>...`, 'warn');
         const reader = new FileReader();
+        reader.onerror = () => {
+          showToast('Gagal membaca file dari perangkat.', false);
+          setProductDbStatusBanner('Gagal membaca file dari perangkat. Coba pilih ulang file Excel.', 'error');
+          e.target.value = '';
+        };
         reader.onload = (ev) => {
           try {
             const data = new Uint8Array(ev.target.result);
             const wb = XLSX.read(data, { type: 'array' });
-            const ws = wb.Sheets[wb.SheetNames[0]];
-            // Fix Accurate export dimension bug where !ref is stuck at A1
-            const cellKeys = Object.keys(ws).filter(k => !k.startsWith('!'));
-            if (cellKeys.length > 1) {
-              let maxR = 0, maxC = 0;
-              cellKeys.forEach(k => {
-                const dec = XLSX.utils.decode_cell(k);
-                if (dec.r > maxR) maxR = dec.r;
-                if (dec.c > maxC) maxC = dec.c;
-              });
-              ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: maxR, c: maxC } });
-            }
-            const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-            let hIdx = -1, cName = -1, cUnit = -1;
-            for (let r = 0; r < Math.min(rows.length, 20); r++) {
-              const up = (rows[r] || []).map(v => String(v || '').trim().toUpperCase());
-              const ni = up.findIndex(x => x === 'NAMA BARANG' || x.includes('NAMA BARANG'));
-              const ui = up.findIndex(x => x === 'SATUAN' || x.includes('SATUAN'));
-              if (ni !== -1) {
-                hIdx = r;
-                cName = ni;
-                cUnit = ui !== -1 ? ui : ni + 1;
-                break;
-              }
-            }
-            if (hIdx === -1) {
-              showToast('Kolom "Nama Barang" tidak ditemukan di file Excel.', false);
-              e.target.value = '';
-              return;
-            }
             const normalizeItemKey = (str) => String(str || '').trim().replace(/\s+/g, ' ').toUpperCase();
             const existingKeys = new Set(
               productDatabase.map(item => normalizeItemKey(item.name)).filter(Boolean)
@@ -12184,43 +12368,118 @@ function doPost(e) {
             const newlyAdded = [];
             const seenInFile = new Set();
             let skippedExistingCount = 0;
+            let matchedSheetName = '';
 
-            for (let r = hIdx + 1; r < rows.length; r++) {
-              const row = rows[r] || [];
-              const nm = String(row[cName] || '').trim().replace(/\s+/g, ' ');
-              const un = String(row[cUnit] || 'PCS').trim().toUpperCase() || 'PCS';
-              if (!nm) continue;
-              const key = normalizeItemKey(nm);
-              if (seenInFile.has(key)) continue;
-              seenInFile.add(key);
+            const NAME_HEADER_CANDIDATES = ['NAMA BARANG', 'NAMA ITEM', 'DESCRIPTION', 'DESKRIPSI', 'ITEM NAME', 'BARANG', 'PRODUK', 'NAMA PRODUK'];
+            const UNIT_HEADER_CANDIDATES = ['SATUAN', 'UNIT', 'UOM', 'KEMASAN', 'SAT'];
+            const IGNORE_NAMES = new Set(['NO', 'NO.', 'KODE', 'KODE BARANG', 'CATEGORY', 'KATEGORI', 'GRADE', 'TIPE', 'TOTAL', 'GRAND TOTAL', 'SUB TOTAL', 'NAMA BARANG', 'NAMA ITEM']);
 
-              if (existingKeys.has(key)) {
-                skippedExistingCount++;
-                continue;
+            for (const sheetName of wb.SheetNames) {
+              const ws = wb.Sheets[sheetName];
+              if (!ws) continue;
+              // Fix Accurate / ERP export dimension bug where !ref is stuck at A1
+              const cellKeys = Object.keys(ws).filter(k => !k.startsWith('!'));
+              if (cellKeys.length > 1) {
+                let maxR = 0, maxC = 0;
+                cellKeys.forEach(k => {
+                  const dec = XLSX.utils.decode_cell(k);
+                  if (dec.r > maxR) maxR = dec.r;
+                  if (dec.c > maxC) maxC = dec.c;
+                });
+                ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: maxR, c: maxC } });
               }
-              existingKeys.add(key);
-              newlyAdded.push({ name: nm, unit: un });
+              const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+              if (!rows || rows.length === 0) continue;
+
+              let hIdx = -1, cName = -1, cUnit = -1;
+              for (let r = 0; r < Math.min(rows.length, 30); r++) {
+                const up = (rows[r] || []).map(v => String(v || '').trim().replace(/\s+/g, ' ').toUpperCase());
+                const ni = up.findIndex(x => NAME_HEADER_CANDIDATES.some(cand => x === cand || x.includes(cand)));
+                const ui = up.findIndex(x => UNIT_HEADER_CANDIDATES.some(cand => x === cand || x.includes(cand)));
+                if (ni !== -1) {
+                  hIdx = r;
+                  cName = ni;
+                  cUnit = ui !== -1 ? ui : -1;
+                  break;
+                }
+              }
+
+              // Fallback jika file Excel tanpa header "Nama Barang" (langsung daftar nama barang di kolom A atau kolom B setelah No)
+              let startRow = hIdx + 1;
+              if (hIdx === -1) {
+                startRow = 0;
+                const sampleRow = rows.find(r => (r || []).some(cell => String(cell || '').trim() !== '')) || [];
+                const col0 = String(sampleRow[0] || '').trim();
+                const col1 = String(sampleRow[1] || '').trim();
+                if (/^\d+$/.test(col0) && col1 && isNaN(Number(col1))) {
+                  cName = 1;
+                  cUnit = sampleRow.length > 2 ? 2 : -1;
+                } else if (col0 && isNaN(Number(col0))) {
+                  cName = 0;
+                  cUnit = sampleRow.length > 1 ? 1 : -1;
+                } else {
+                  continue;
+                }
+              }
+
+              matchedSheetName = sheetName;
+              for (let r = startRow; r < rows.length; r++) {
+                const row = rows[r] || [];
+                const nm = String(row[cName] || '').trim().replace(/\s+/g, ' ');
+                if (!nm) continue;
+                const key = normalizeItemKey(nm);
+                if (IGNORE_NAMES.has(key) || key.startsWith('TOTAL ') || key.startsWith('SUB TOTAL')) continue;
+                if (/^\d+([.,]\d+)?$/.test(key)) continue;
+
+                let un = 'PCS';
+                if (cUnit !== -1 && row[cUnit] !== undefined && String(row[cUnit]).trim() !== '') {
+                  const rawUnit = String(row[cUnit]).trim().toUpperCase();
+                  if (isNaN(Number(rawUnit)) && rawUnit.length <= 15) {
+                    un = rawUnit;
+                  }
+                } else {
+                  // Deteksi satuan otomatis dari akhiran nama barang jika kolom satuan tidak ada
+                  const mEnd = key.match(/(?:^|\s|[-()])(CTG|SP|SSG|PCS|TUBE|DUS|LMB|PAIL|DRUM|MG|SET|ROLL|MTR|KG)\)?$/);
+                  if (mEnd && mEnd[1]) un = mEnd[1];
+                }
+
+                if (seenInFile.has(key)) continue;
+                seenInFile.add(key);
+
+                if (existingKeys.has(key)) {
+                  skippedExistingCount++;
+                  continue;
+                }
+                existingKeys.add(key);
+                newlyAdded.push({ name: nm, unit: un });
+              }
+              if (seenInFile.size > 0) break;
             }
 
             if (seenInFile.size === 0) {
-              showToast('Tidak ada baris data valid di file Excel.', false);
+              showToast('Tidak ada data nama barang yang valid di file Excel.', false);
+              setProductDbStatusBanner(`File <b>${escapeHtml(file.name)}</b> tidak memuat baris nama barang yang valid. Pastikan terdapat kolom <b>Nama Barang</b> dan <b>Satuan</b>.`, 'error');
               e.target.value = '';
               return;
             }
 
             if (newlyAdded.length === 0) {
-              showToast(`Semua (${skippedExistingCount}) barang di file sudah tercatat di database. Tidak ada tambahan baru.`, false);
+              showToast(`Semua (${skippedExistingCount}) barang di file sudah ada di database.`, false);
+              setProductDbStatusBanner(`Kroscek selesai (${escapeHtml(file.name)}): Semua <b>${skippedExistingCount} barang</b> sudah terdaftar di Database Barang. Tidak ada item baru yang perlu ditambahkan.`, 'warn');
               e.target.value = '';
               return;
             }
 
-            productDatabase = [...productDatabase, ...newlyAdded];
+            productDatabase = [...newlyAdded, ...productDatabase];
             resetProductDbForm();
-            saveProductDatabase();
+            saveProductDatabase(true);
             renderProductDbView();
-            showToast(`+${newlyAdded.length} barang baru ditambahkan! (${skippedExistingCount} sudah ada dilewati • Total: ${productDatabase.length})`);
+            const okMsg = `Import berhasil (${escapeHtml(file.name)} • Sheet: ${escapeHtml(matchedSheetName)}): <b>+${newlyAdded.length} barang baru</b> disimpan ke Database Barang (${skippedExistingCount} barang lama dilewati • Total sekarang: <b>${productDatabase.length} barang</b>).`;
+            setProductDbStatusBanner(okMsg, 'success');
+            showToast(`+${newlyAdded.length} barang baru ditambahkan ke Database Barang!`);
           } catch (err) {
             showToast('Gagal membaca Excel: ' + err.message, false);
+            setProductDbStatusBanner('Gagal memproses file Excel: ' + escapeHtml(err.message), 'error');
           }
           e.target.value = '';
         };
