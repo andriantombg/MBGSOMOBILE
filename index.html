@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="MBG SO Mobile" />
-  <meta name="mbg-app-version" content="26.11.59" />
+  <meta name="mbg-app-version" content="26.11.60" />
   <link id="pwaManifestLink" rel="manifest" href="" />
   <link id="pwaAppleIcon" rel="apple-touch-icon" href="" />
   <link id="pwaFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%231e3a8a'/%3E%3Ctext x='96' y='92' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='56' fill='%23ffffff'%3ENII%3C/text%3E%3Ctext x='96' y='142' text-anchor='middle' font-family='Arial,sans-serif' font-weight='bold' font-size='40' fill='%2393c5fd'%3ESO%3C/text%3E%3C/svg%3E" />
@@ -314,8 +314,9 @@
     <div id="viewCount" class="flex flex-col gap-3">
       
       <!-- KPI SUMMARY DASHBOARD (Collapsible) -->
-      <section id="dashboardPanel" class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 transition-all">
-        <div class="flex items-center justify-between mb-3">
+      <section id="dashboardPanel" class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 transition-all space-y-3">
+        <!-- Header Ringkasan + Mode SO Badge + Progress -->
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-2">
             <span class="p-1.5 bg-blue-50 dark:bg-blue-900/40 text-brand-600 dark:text-blue-400 rounded-lg">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -323,7 +324,12 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
               </svg>
             </span>
-            <h2 class="font-bold text-sm text-slate-800 dark:text-slate-100">Ringkasan Stock Opname</h2>
+            <div>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <h2 class="font-bold text-sm text-slate-800 dark:text-slate-100">Ringkasan Stock Opname</h2>
+                <span id="soScopeModeBadge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 border border-indigo-200/80 dark:border-indigo-700/70">SO FULL (SEMUA KATEGORI)</span>
+              </div>
+            </div>
           </div>
           <div class="flex items-center gap-2">
             <button id="btnOpenUserLog" class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-[10px] font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1 transition" title="Lihat Log Inputan User">
@@ -338,10 +344,45 @@
           </div>
         </div>
 
-        <!-- Metric Grid -->
+        <!-- 2. CEKLIST KATEGORI BARANG YANG DI-SO (Kosong = Otomatis SO Full) -->
+        <div class="bg-slate-50/90 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-1.5">
+            <span class="text-[11px] font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+              <span>☑️ Target Kategori SO:</span>
+              <span id="soCategoryChecklistHint" class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Tidak ada ceklist dipilih → Otomatis SO Full</span>
+            </span>
+            <button type="button" id="btnResetSoCategoryChecklist" class="hidden px-2 py-0.5 rounded-lg bg-slate-200/90 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-[10px] font-extrabold text-slate-700 dark:text-slate-200 transition">
+              Reset ke SO Full
+            </button>
+          </div>
+          <div id="soCategoryChecklistGroup" class="flex flex-wrap items-center gap-1.5 text-[11px]">
+            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-sky-200 dark:border-sky-800/70 bg-sky-50/70 dark:bg-sky-950/40 text-sky-800 dark:text-sky-200 font-bold transition" data-cat-key="ACP">
+              <input type="checkbox" value="ACP" class="so-cat-checkbox rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5" />
+              <span>ACP</span>
+            </label>
+            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800/70 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 font-bold transition" data-cat-key="Sealant">
+              <input type="checkbox" value="Sealant" class="so-cat-checkbox rounded text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5" />
+              <span>Sealant</span>
+            </label>
+            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-amber-200 dark:border-amber-800/70 bg-amber-50/70 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 font-bold transition" data-cat-key="Sunsulate">
+              <input type="checkbox" value="Sunsulate" class="so-cat-checkbox rounded text-amber-600 focus:ring-amber-500 w-3.5 h-3.5" />
+              <span>Sunsulate</span>
+            </label>
+            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-purple-200 dark:border-purple-800/70 bg-purple-50/70 dark:bg-purple-950/40 text-purple-800 dark:text-purple-200 font-bold transition" data-cat-key="Rooftop">
+              <input type="checkbox" value="Rooftop" class="so-cat-checkbox rounded text-purple-600 focus:ring-purple-500 w-3.5 h-3.5" />
+              <span>Rooftop</span>
+            </label>
+            <label class="so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-rose-200 dark:border-rose-800/70 bg-rose-50/70 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 font-bold transition" data-cat-key="Accessories">
+              <input type="checkbox" value="Accessories" class="so-cat-checkbox rounded text-rose-600 focus:ring-rose-500 w-3.5 h-3.5" />
+              <span>Accessories</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Metric Grid Keseluruhan (Sesuai Scope Ceklist Aktif) -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
           <div class="bg-slate-50 dark:bg-slate-700/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
-            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Total QTY Fisik</span>
+            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Total QTY SO (Fisik)</span>
             <div class="flex items-baseline gap-1 mt-0.5">
               <span class="text-lg font-bold text-slate-900 dark:text-white" id="statQtyFisik">0</span>
               <span class="text-[10px] text-slate-400">pcs</span>
@@ -352,7 +393,7 @@
           </div>
 
           <div class="bg-slate-50 dark:bg-slate-700/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
-            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Selisih QTY</span>
+            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Selisih (SO - Sistem)</span>
             <div class="flex items-baseline gap-1 mt-0.5">
               <span class="text-lg font-bold text-slate-900 dark:text-white" id="statSelisihQty">0</span>
               <span class="text-[10px] text-slate-400">pcs</span>
@@ -363,7 +404,7 @@
           </div>
 
           <div class="bg-slate-50 dark:bg-slate-700/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
-            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Total Dus (SO)</span>
+            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Total Dus Sealant (SO)</span>
             <div class="flex items-baseline gap-1 mt-0.5">
               <span class="text-lg font-bold text-slate-900 dark:text-white" id="statMeterFisik">0</span>
               <span class="text-[10px] text-slate-400">dus</span>
@@ -374,10 +415,10 @@
           </div>
 
           <div class="bg-slate-50 dark:bg-slate-700/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
-            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Item Terhitung</span>
+            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Akurasi Kategori SO</span>
             <div class="flex items-baseline gap-1 mt-0.5">
-              <span class="text-lg font-bold text-slate-900 dark:text-white" id="statSelisihMeter">0</span>
-              <span class="text-[10px] text-slate-400">item</span>
+              <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400" id="statSelisihMeter">0%</span>
+              <span class="text-[10px] text-slate-400" id="statCountedSubLabel">(0 item)</span>
             </div>
             <div class="text-[10px] mt-0.5" id="statSelisihMeterBadge">
               <span class="text-slate-400">Belum dihitung</span>
@@ -385,8 +426,19 @@
           </div>
         </div>
 
+        <!-- 1. SELISIH PER KATEGORI (Warna Berbeda Per Kategori + Rumus Qty SO - Qty Sistem + Konversi Dus Sealant) -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300">Selisih &amp; Akurasi Per Kategori (Qty SO − Qty Sistem)</span>
+            <span class="text-[10px] text-slate-400">Klik kartu untuk filter kategori</span>
+          </div>
+          <div id="categoryVarianceCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+            <!-- Rendered dynamically for ACP, Sealant, Sunsulate, Rooftop, Accessories -->
+          </div>
+        </div>
+
         <!-- Status Chips Breakdown -->
-        <div class="flex items-center justify-between gap-1 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700 text-[11px]">
+        <div class="flex items-center justify-between gap-1 pt-2.5 border-t border-slate-100 dark:border-slate-700 text-[11px]">
           <div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
             <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
             <span>Cocok: <b id="countMatch">0</b></span>
@@ -461,7 +513,8 @@
             <option value="Sunsulate">Sunsulate</option>
             <option value="Godia">Godia</option>
             <option value="Rooftop">Rooftop</option>
-            <option value="Acc">Acc (Accessories)</option>
+            <option value="Accessories">Accessories (Acc &amp; Godia)</option>
+            <option value="Acc">Acc Saja</option>
           </select>
 
           <select id="sortSelect" class="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500">
@@ -2064,7 +2117,7 @@
             </svg>
             <span>Share HTML</span>
           </button>
-          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.59</span>
+          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.60</span>
         </div>
       </div>
     </div>
@@ -4816,12 +4869,147 @@
       });
     }
 
+    // ==========================================
+    // KATEGORI SUMMARY & CEKLIST SCOPE SO
+    // ==========================================
+    const SO_SUMMARY_CATEGORIES = [
+      {
+        key: 'ACP',
+        label: 'ACP',
+        subtitle: 'Aluminium Composite Panel',
+        cardCls: 'bg-sky-50/90 dark:bg-sky-950/45 border-sky-300/90 dark:border-sky-800/80',
+        headerCls: 'bg-sky-600 text-white',
+        accentText: 'text-sky-800 dark:text-sky-200',
+        chkActiveCls: 'border-sky-500 bg-sky-600 text-white shadow-xs',
+        chkInactiveCls: 'border-sky-200 dark:border-sky-800/70 bg-sky-50/70 dark:bg-sky-950/40 text-sky-800 dark:text-sky-200',
+        isSealant: false
+      },
+      {
+        key: 'Sealant',
+        label: 'Sealant',
+        subtitle: 'Konversi Dus (CTG / SP)',
+        cardCls: 'bg-emerald-50/90 dark:bg-emerald-950/45 border-emerald-300/90 dark:border-emerald-800/80',
+        headerCls: 'bg-emerald-600 text-white',
+        accentText: 'text-emerald-800 dark:text-emerald-200',
+        chkActiveCls: 'border-emerald-500 bg-emerald-600 text-white shadow-xs',
+        chkInactiveCls: 'border-emerald-200 dark:border-emerald-800/70 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200',
+        isSealant: true
+      },
+      {
+        key: 'Sunsulate',
+        label: 'Sunsulate',
+        subtitle: 'Insulation Foil',
+        cardCls: 'bg-amber-50/90 dark:bg-amber-950/45 border-amber-300/90 dark:border-amber-800/80',
+        headerCls: 'bg-amber-600 text-white',
+        accentText: 'text-amber-800 dark:text-amber-200',
+        chkActiveCls: 'border-amber-500 bg-amber-600 text-white shadow-xs',
+        chkInactiveCls: 'border-amber-200 dark:border-amber-800/70 bg-amber-50/70 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200',
+        isSealant: false
+      },
+      {
+        key: 'Rooftop',
+        label: 'Rooftop',
+        subtitle: 'UPVC & Aksesoris Atap',
+        cardCls: 'bg-purple-50/90 dark:bg-purple-950/45 border-purple-300/90 dark:border-purple-800/80',
+        headerCls: 'bg-purple-600 text-white',
+        accentText: 'text-purple-800 dark:text-purple-200',
+        chkActiveCls: 'border-purple-500 bg-purple-600 text-white shadow-xs',
+        chkInactiveCls: 'border-purple-200 dark:border-purple-800/70 bg-purple-50/70 dark:bg-purple-950/40 text-purple-800 dark:text-purple-200',
+        isSealant: false
+      },
+      {
+        key: 'Accessories',
+        label: 'Accessories',
+        subtitle: 'Acc, Godia & Fittings',
+        cardCls: 'bg-rose-50/90 dark:bg-rose-950/45 border-rose-300/90 dark:border-rose-800/80',
+        headerCls: 'bg-rose-600 text-white',
+        accentText: 'text-rose-800 dark:text-rose-200',
+        chkActiveCls: 'border-rose-500 bg-rose-600 text-white shadow-xs',
+        chkInactiveCls: 'border-rose-200 dark:border-rose-800/70 bg-rose-50/70 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200',
+        isSealant: false
+      }
+    ];
+
+    let selectedSoTargetCategories = new Set();
+
+    function normalizeSummaryCategoryKey(rawCat) {
+      const c = String(rawCat || '').trim().toUpperCase();
+      if (c === 'ACP') return 'ACP';
+      if (c === 'SEALANT') return 'Sealant';
+      if (c === 'SUNSULATE') return 'Sunsulate';
+      if (c === 'ROOFTOP') return 'Rooftop';
+      return 'Accessories';
+    }
+
+    function isItemInActiveSoScope(item) {
+      if (!selectedSoTargetCategories || selectedSoTargetCategories.size === 0) return true;
+      return selectedSoTargetCategories.has(normalizeSummaryCategoryKey(item && item.cat));
+    }
+
+    function syncSoCategoryChecklistUI() {
+      const isPartial = selectedSoTargetCategories.size > 0;
+      const modeBadge = document.getElementById('soScopeModeBadge');
+      const hintEl = document.getElementById('soCategoryChecklistHint');
+      const resetBtn = document.getElementById('btnResetSoCategoryChecklist');
+
+      if (modeBadge) {
+        if (!isPartial) {
+          modeBadge.textContent = 'SO FULL (SEMUA KATEGORI)';
+          modeBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 border border-indigo-200/80 dark:border-indigo-700/70';
+        } else {
+          const listStr = Array.from(selectedSoTargetCategories).join(', ').toUpperCase();
+          modeBadge.textContent = `SO PARSIAL: ${listStr}`;
+          modeBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 dark:bg-amber-900/70 dark:text-amber-200 border border-amber-300 dark:border-amber-700';
+        }
+      }
+
+      if (hintEl) {
+        if (!isPartial) {
+          hintEl.textContent = 'Tidak ada ceklist dipilih → Otomatis SO Full (Semua Kategori)';
+        } else {
+          hintEl.textContent = `Fokus SO & Akurasi hanya menghitung ${selectedSoTargetCategories.size} kategori terpilih`;
+        }
+      }
+
+      if (resetBtn) {
+        resetBtn.classList.toggle('hidden', !isPartial);
+      }
+
+      document.querySelectorAll('.so-cat-chk-label').forEach(lbl => {
+        const key = lbl.getAttribute('data-cat-key');
+        const def = SO_SUMMARY_CATEGORIES.find(d => d.key === key);
+        const inp = lbl.querySelector('input[type="checkbox"]');
+        const checked = selectedSoTargetCategories.has(key);
+        if (inp) inp.checked = checked;
+        if (def) {
+          lbl.className = `so-cat-chk-label cursor-pointer select-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border font-bold transition ${checked ? def.chkActiveCls : def.chkInactiveCls}`;
+        }
+      });
+    }
+
     // Update KPIs & Progress
     function updateKPIs() {
+      syncSoCategoryChecklistUI();
+
+      const catStatsMap = {};
+      SO_SUMMARY_CATEGORIES.forEach(def => {
+        catStatsMap[def.key] = {
+          def,
+          totalItems: 0,
+          countedItems: 0,
+          matchItems: 0,
+          sysQty: 0,
+          soQty: 0,
+          sysDus: 0,
+          soDus: 0
+        };
+      });
+
       let totalSysQty = 0;
       let totalSysMeter = 0;
       let totalFisikQty = 0;
       let totalFisikMeter = 0;
+      let scopedTotalItems = 0;
       let countedCount = 0;
       let matchCount = 0;
       let plusCount = 0;
@@ -4832,25 +5020,52 @@
 
       allItems.forEach(item => {
         const sysVal = Number(item.sysQty) || 0;
+        const isCounted = item.countQty !== null && item.countQty !== undefined;
+        const cQty = isCounted ? (Number(item.countQty) || 0) : 0;
+        const sumKey = normalizeSummaryCategoryKey(item.cat);
+        const st = catStatsMap[sumKey];
+
+        if (st) {
+          st.totalItems++;
+          st.sysQty += sysVal;
+          if (st.def.isSealant) {
+            st.sysDus += calcSealantDusDecimal(item, sysVal);
+          }
+          if (isCounted) {
+            st.countedItems++;
+            st.soQty += cQty;
+            if (st.def.isSealant) {
+              st.soDus += calcSealantDusDecimal(item, cQty);
+            }
+            if (Math.abs(cQty - sysVal) < 0.001) {
+              st.matchItems++;
+            }
+          }
+        }
+
+        if (!isItemInActiveSoScope(item)) return;
+
+        scopedTotalItems++;
         if (sysVal > 0) {
           inStockCount++;
         }
         totalSysQty += sysVal;
-        totalSysMeter += calcSealantDusDecimal(item, sysVal);
+        if (sumKey === 'Sealant') {
+          totalSysMeter += calcSealantDusDecimal(item, sysVal);
+        }
 
         if (item.isCustom) {
           customCount++;
         }
 
-        if (item.countQty !== null && item.countQty !== undefined) {
+        if (isCounted) {
           countedCount++;
-          const cQty = item.countQty;
-          const cMeter = calcSealantDusDecimal(item, cQty);
-          
           totalFisikQty += cQty;
-          totalFisikMeter += cMeter;
+          if (sumKey === 'Sealant') {
+            totalFisikMeter += calcSealantDusDecimal(item, cQty);
+          }
 
-          const diffQty = cQty - item.sysQty;
+          const diffQty = cQty - sysVal;
           if (Math.abs(diffQty) < 0.001) {
             matchCount++;
           } else if (diffQty > 0) {
@@ -4859,17 +5074,95 @@
             minusCount++;
           }
         } else if (Math.abs(sysVal) >= 0.001) {
-          // Hanya item dengan stok sistem != 0 yang termasuk dalam status Belum Dihitung
           pendingCount++;
         }
       });
 
-      const totalItems = allItems.length;
-      const pct = totalItems > 0 ? ((countedCount / totalItems) * 100).toFixed(1) : '0';
+      const catGrid = document.getElementById('categoryVarianceCardsGrid');
+      if (catGrid) {
+        catGrid.innerHTML = SO_SUMMARY_CATEGORIES.map(def => {
+          const st = catStatsMap[def.key];
+          const diffQty = st.soQty - st.sysQty;
+          const diffSign = diffQty > 0 ? '+' : '';
+          const diffColor = Math.abs(diffQty) < 0.001
+            ? 'text-emerald-700 dark:text-emerald-300'
+            : (diffQty < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400');
+
+          const statusTag = st.countedItems === 0
+            ? '<span class="text-[10px] font-semibold text-slate-400">Belum SO</span>'
+            : (Math.abs(diffQty) < 0.001
+              ? '<span class="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/70 dark:text-emerald-200 text-[9px] font-extrabold">Cocok (0)</span>'
+              : (diffQty < 0
+                ? '<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 dark:bg-rose-900/70 dark:text-rose-200 text-[9px] font-extrabold">Fisik Kurang</span>'
+                : '<span class="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/70 dark:text-blue-200 text-[9px] font-extrabold">Fisik Lebih</span>'));
+
+          const accPct = st.countedItems > 0 ? ((st.matchItems / st.countedItems) * 100).toFixed(0) + '%' : '-';
+          const isSelectedTarget = selectedSoTargetCategories.has(def.key);
+          const isDimmed = selectedSoTargetCategories.size > 0 && !isSelectedTarget;
+
+          let sealantDusRow = '';
+          if (def.isSealant) {
+            const diffDus = st.soDus - st.sysDus;
+            const dusSign = diffDus > 0 ? '+' : '';
+            sealantDusRow = `
+              <div class="mt-1.5 pt-1.5 border-t border-emerald-200/80 dark:border-emerald-800/70 flex items-center justify-between text-[10px]">
+                <span class="font-bold text-emerald-800 dark:text-emerald-300">Selisih Dus:</span>
+                <span class="font-extrabold ${Math.abs(diffDus) < 0.01 ? 'text-emerald-700 dark:text-emerald-300' : (diffDus < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400')}">${dusSign}${fmtNum(diffDus, 1)} dus</span>
+              </div>
+              <div class="flex items-center justify-between text-[9px] text-emerald-700/80 dark:text-emerald-400/90">
+                <span>SO: ${fmtNum(st.soDus, 1)} dus</span>
+                <span>Sis: ${fmtNum(st.sysDus, 1)} dus</span>
+              </div>
+            `;
+          }
+
+          return `
+            <div data-filter-cat="${def.key}" class="cat-summary-card cursor-pointer rounded-xl border p-2.5 transition hover:shadow-md ${def.cardCls} ${isSelectedTarget ? 'ring-2 ring-offset-1 ring-indigo-500 dark:ring-offset-slate-800' : ''} ${isDimmed ? 'opacity-50' : ''}" title="Klik untuk menampilkan barang kategori ${def.label}">
+              <div class="flex items-center justify-between gap-1 mb-1.5">
+                <span class="px-2 py-0.5 rounded-lg text-[10px] font-extrabold tracking-wide ${def.headerCls}">${def.label}</span>
+                <span class="text-[10px] font-bold ${def.accentText}">Akurasi: ${accPct}</span>
+              </div>
+              <div class="flex items-baseline justify-between gap-1">
+                <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Selisih:</span>
+                <span class="text-sm font-black ${diffColor}">${diffSign}${fmtNum(diffQty)} <span class="text-[10px] font-normal">pcs</span></span>
+              </div>
+              <div class="flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-300 mt-0.5">
+                <span>SO: <b>${fmtNum(st.soQty)}</b></span>
+                <span>Sis: <b>${fmtNum(st.sysQty)}</b></span>
+              </div>
+              <div class="flex items-center justify-between text-[10px] mt-1">
+                <span class="text-slate-500 dark:text-slate-400">${st.countedItems}/${st.totalItems} item</span>
+                ${statusTag}
+              </div>
+              ${sealantDusRow}
+            </div>
+          `;
+        }).join('');
+
+        catGrid.querySelectorAll('.cat-summary-card').forEach(card => {
+          card.addEventListener('click', () => {
+            const catKey = card.getAttribute('data-filter-cat');
+            const profEl = document.getElementById('profileFilter');
+            if (selectedSoTargetCategories.size > 0 && !selectedSoTargetCategories.has(catKey)) {
+              selectedSoTargetCategories.add(catKey);
+              syncSoCategoryChecklistUI();
+            }
+            if (profEl) {
+              profEl.value = (currentProfile === catKey) ? 'all' : catKey;
+              currentProfile = profEl.value;
+            }
+            currentPage = 1;
+            updateKPIs();
+            renderItems();
+          });
+        });
+      }
+
+      const pct = scopedTotalItems > 0 ? ((countedCount / scopedTotalItems) * 100).toFixed(1) : '0';
 
       document.getElementById('topProgressBar').style.width = pct + '%';
-      document.getElementById('statProgressText').textContent = `${countedCount} / ${totalItems} Item (${pct}%) Selesai`;
-      document.getElementById('recapTabBadge').textContent = `${countedCount}/${totalItems}`;
+      document.getElementById('statProgressText').textContent = `${countedCount} / ${scopedTotalItems} Item (${pct}%) Selesai`;
+      document.getElementById('recapTabBadge').textContent = `${countedCount}/${scopedTotalItems}`;
 
       document.getElementById('statQtySistem').textContent = fmtNum(totalSysQty);
       document.getElementById('statQtyFisik').textContent = fmtNum(totalFisikQty);
@@ -4877,7 +5170,6 @@
       document.getElementById('statMeterSistem').textContent = fmtNum(totalSysMeter, 1);
       document.getElementById('statMeterFisik').textContent = fmtNum(totalFisikMeter, 1);
 
-      // Selisih QTY
       const diffQtyTotal = totalFisikQty - totalSysQty;
       const elDiffQty = document.getElementById('statSelisihQty');
       const elDiffQtyBadge = document.getElementById('statSelisihQtyBadge');
@@ -4891,31 +5183,36 @@
         if (Math.abs(diffQtyTotal) < 0.001) {
           elDiffQtyBadge.innerHTML = '<span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 font-bold">Cocok (0)</span>';
         } else if (diffQtyTotal > 0) {
-          elDiffQtyBadge.innerHTML = `<span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 font-bold">+${fmtNum(diffQtyTotal)} Surplus</span>`;
+          elDiffQtyBadge.innerHTML = `<span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 font-bold">+${fmtNum(diffQtyTotal)} Fisik Lebih</span>`;
         } else {
-          elDiffQtyBadge.innerHTML = `<span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300 font-bold">${fmtNum(diffQtyTotal)} Minus</span>`;
+          elDiffQtyBadge.innerHTML = `<span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300 font-bold">${fmtNum(diffQtyTotal)} Fisik Kurang</span>`;
         }
       }
 
-      // Item Terhitung & Net Selisih Dus Sealant
       const diffMeterTotal = totalFisikMeter - totalSysMeter;
-      const elDiffMeter = document.getElementById('statSelisihMeter');
-      const elDiffMeterBadge = document.getElementById('statSelisihMeterBadge');
-      elDiffMeter.textContent = fmtNum(countedCount);
+      const elAccVal = document.getElementById('statSelisihMeter');
+      const elAccSub = document.getElementById('statCountedSubLabel');
+      const elAccBadge = document.getElementById('statSelisihMeterBadge');
+      if (elAccSub) elAccSub.textContent = `(${fmtNum(countedCount)} item)`;
+
       if (countedCount === 0) {
-        elDiffMeterBadge.innerHTML = '<span class="text-slate-400">Belum dihitung</span>';
+        elAccVal.textContent = '0%';
+        elAccBadge.innerHTML = '<span class="text-slate-400">Belum dihitung</span>';
       } else {
-        const accPct = ((matchCount / countedCount) * 100).toFixed(0);
-        elDiffMeterBadge.innerHTML = `<span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 font-bold">Akurasi ${accPct}%</span>`;
+        const accPct = ((matchCount / countedCount) * 100).toFixed(1);
+        elAccVal.textContent = `${accPct}%`;
+        const scopeText = selectedSoTargetCategories.size > 0
+          ? Array.from(selectedSoTargetCategories).join('+')
+          : 'SO Full';
+        elAccBadge.innerHTML = `<span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 font-bold">${matchCount}/${countedCount} Cocok (${scopeText})</span>`;
       }
 
-      // Status breakdown
       document.getElementById('countMatch').textContent = matchCount;
       document.getElementById('countMinus').textContent = minusCount;
       document.getElementById('countPlus').textContent = plusCount;
       document.getElementById('countPending').textContent = pendingCount;
 
-      document.getElementById('pillCountAll').textContent = totalItems;
+      document.getElementById('pillCountAll').textContent = scopedTotalItems;
       document.getElementById('pillCountInStock').textContent = inStockCount;
       document.getElementById('pillCountPending').textContent = pendingCount;
       document.getElementById('pillCountCounted').textContent = countedCount;
@@ -4923,10 +5220,12 @@
       document.getElementById('pillCountMatch').textContent = matchCount;
       document.getElementById('pillCountCustom').textContent = customCount;
 
-      // REKAP BANNER KPIS
       const accuracyPct = countedCount > 0 ? ((matchCount / countedCount) * 100).toFixed(1) : 0;
+      const scopeDesc = selectedSoTargetCategories.size > 0
+        ? ` • Kategori: ${Array.from(selectedSoTargetCategories).join(', ')}`
+        : ' • Mode: SO Full';
       document.getElementById('recapAccuracyRate').textContent = accuracyPct + '%';
-      document.getElementById('recapAccuracyDesc').textContent = `${matchCount} item cocok dari ${countedCount} terhitung`;
+      document.getElementById('recapAccuracyDesc').textContent = `${matchCount} item cocok dari ${countedCount} terhitung${scopeDesc}`;
       
       document.getElementById('recapNetSelisihQty').textContent = (diffQtyTotal > 0 ? '+' : '') + fmtNum(diffQtyTotal);
       document.getElementById('recapNetSelisihQty').className = `text-2xl font-black ${diffQtyTotal === 0 ? 'text-slate-900 dark:text-white' : (diffQtyTotal > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-rose-600 dark:text-rose-400')}`;
@@ -5655,6 +5954,8 @@
       const query = currentSearch.toLowerCase().trim();
 
       return allItems.filter(item => {
+        if (!isItemInActiveSoScope(item)) return false;
+
         if (query) {
           const matchName = item.name.toLowerCase().includes(query);
           const matchCat = item.cat.toLowerCase().includes(query);
@@ -5679,7 +5980,11 @@
         if (currentFilter === 'custom' && !item.isCustom) return false;
 
         if (currentProfile !== 'all') {
-          if (item.cat !== currentProfile) return false;
+          if (currentProfile === 'Accessories') {
+            if (normalizeSummaryCategoryKey(item.cat) !== 'Accessories') return false;
+          } else if (item.cat !== currentProfile) {
+            return false;
+          }
         }
 
         return true;
@@ -8485,7 +8790,7 @@
       } catch (e) {}
     }
 
-    const DEFAULT_APP_BUILD_NUMBER = '59';
+    const DEFAULT_APP_BUILD_NUMBER = '60';
 
     function getDynamicAppVersionCode() {
       let buildNum = DEFAULT_APP_BUILD_NUMBER;
@@ -11291,6 +11596,38 @@ function doPost(e) {
         currentProfile = e.target.value;
         currentPage = 1;
         renderItems();
+      });
+
+      document.querySelectorAll('.so-cat-checkbox').forEach(chk => {
+        chk.addEventListener('change', (e) => {
+          const key = e.target.value;
+          if (e.target.checked) {
+            selectedSoTargetCategories.add(key);
+          } else {
+            selectedSoTargetCategories.delete(key);
+          }
+          const profEl = document.getElementById('profileFilter');
+          if (profEl && currentProfile !== 'all' && selectedSoTargetCategories.size > 0 && !selectedSoTargetCategories.has(currentProfile)) {
+            profEl.value = 'all';
+            currentProfile = 'all';
+          }
+          currentPage = 1;
+          updateKPIs();
+          renderItems();
+        });
+      });
+
+      document.getElementById('btnResetSoCategoryChecklist')?.addEventListener('click', () => {
+        selectedSoTargetCategories.clear();
+        const profEl = document.getElementById('profileFilter');
+        if (profEl) {
+          profEl.value = 'all';
+          currentProfile = 'all';
+        }
+        currentPage = 1;
+        updateKPIs();
+        renderItems();
+        showToast('Mode kembali ke SO Full (Semua Kategori)');
       });
 
       document.getElementById('sortSelect').addEventListener('change', (e) => {
