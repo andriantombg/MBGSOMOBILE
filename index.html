@@ -5530,22 +5530,30 @@
           };
           const sSubKey = st.def.isSealant ? getSealantSubType(item) : null;
 
+          st.sysQty += sysVal;
+          if (st.def.isSealant) {
+            const sDus = calcSealantDusDecimal(item, sysVal);
+            st.sysDus += sDus;
+            const sub = st.sealantSub[sSubKey];
+            if (sub) {
+              sub.sysQty += sysVal;
+              if (sub.sysDus !== undefined) {
+                sub.sysDus += sDus;
+              }
+            }
+          }
+
           if (isCounted) {
             st.countedItems++;
-            st.sysQty += sysVal;
             st.soQty += cQty;
             if (st.def.isSealant) {
-              const sDus = calcSealantDusDecimal(item, sysVal);
               const cDus = calcSealantDusDecimal(item, cQty);
-              st.sysDus += sDus;
               st.soDus += cDus;
               const sub = st.sealantSub[sSubKey];
               if (sub) {
                 sub.counted++;
-                sub.sysQty += sysVal;
                 sub.soQty += cQty;
-                if (sub.sysDus !== undefined) {
-                  sub.sysDus += sDus;
+                if (sub.soDus !== undefined) {
                   sub.soDus += cDus;
                 }
               }
@@ -5582,12 +5590,15 @@
           customCount++;
         }
 
+        totalSysQty += sysVal;
+        if (sumKey === 'Sealant') {
+          totalSysMeter += calcSealantDusDecimal(item, sysVal);
+        }
+
         if (isCounted) {
           countedCount++;
-          totalSysQty += sysVal;
           totalFisikQty += cQty;
           if (sumKey === 'Sealant') {
-            totalSysMeter += calcSealantDusDecimal(item, sysVal);
             totalFisikMeter += calcSealantDusDecimal(item, cQty);
           }
 
@@ -5628,8 +5639,8 @@
           const isSelectedTarget = selectedSoTargetCategories.has(def.key);
           const isDimmed = selectedSoTargetCategories.size > 0 && !isSelectedTarget;
 
-          const displaySysQty = st.countedItems > 0 ? st.sysQty : (st.uncountedSysQty || 0);
-          const displayDiffQty = st.countedItems > 0 ? (st.soQty - st.sysQty) : -(st.uncountedSysQty || 0);
+          const displaySysQty = st.sysQty;
+          const displayDiffQty = st.soQty - st.sysQty;
           const displayDiffSign = displayDiffQty > 0 ? '+' : '';
           const displayDiffColor = st.countedItems === 0
             ? 'text-slate-500 dark:text-slate-400'
@@ -5639,8 +5650,8 @@
 
           let sealantDusRow = '';
           if (def.isSealant) {
-            const displaySysDus = st.countedItems > 0 ? st.sysDus : (st.uncountedSysDus || 0);
-            const displayDiffDus = st.countedItems > 0 ? (st.soDus - st.sysDus) : -(st.uncountedSysDus || 0);
+            const displaySysDus = st.sysDus;
+            const displayDiffDus = st.soDus - st.sysDus;
             const dusSign = displayDiffDus > 0 ? '+' : '';
             const dusColor = st.countedItems === 0
               ? 'text-slate-500 dark:text-slate-400'
@@ -5655,14 +5666,14 @@
 
             const ctgDiffQty = ctg.soQty - ctg.sysQty;
             const ctgDiffDus = ctg.soDus - ctg.sysDus;
-            const ctgSysShow = ctgHas ? ctg.sysQty : ctg.uncountedSysQty;
-            const ctgDusShow = ctgHas ? ctg.soDus : ctg.uncountedSysDus;
+            const ctgSysShow = ctg.sysQty;
+            const ctgDusShow = ctgHas ? ctg.soDus : ctg.sysDus;
             const ctgColor = !ctgHas ? 'text-slate-400' : (Math.abs(ctgDiffQty) < 0.001 ? 'text-emerald-700 dark:text-emerald-300' : (ctgDiffQty < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'));
 
             const spDiffQty = sp.soQty - sp.sysQty;
             const spDiffDus = sp.soDus - sp.sysDus;
-            const spSysShow = spHas ? sp.sysQty : sp.uncountedSysQty;
-            const spDusShow = spHas ? sp.soDus : sp.uncountedSysDus;
+            const spSysShow = sp.sysQty;
+            const spDusShow = spHas ? sp.soDus : sp.sysDus;
             const spColor = !spHas ? 'text-slate-400' : (Math.abs(spDiffQty) < 0.001 ? 'text-emerald-700 dark:text-emerald-300' : (spDiffQty < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'));
 
             sealantDusRow = `
@@ -5699,7 +5710,7 @@
             `;
           }
 
-          const totalMasterSys = st.sysQty + (st.uncountedSysQty || 0);
+          const totalMasterSys = st.sysQty;
           const uncountedNote = (st.countedItems > 0 && Math.abs(st.uncountedSysQty || 0) >= 0.001)
             ? `<div class="text-[8.5px] text-slate-400 mt-0.5 truncate leading-tight" title="Total stok sistem seluruh item kategori ini: ${fmtNum(totalMasterSys)} pcs">Sisa blm SO: ${fmtNum(st.uncountedSysQty || 0)}</div>`
             : '';
@@ -13872,7 +13883,7 @@ function doPost(e) {
         const totalAllSysQty = currentItems.reduce((sum, it) => sum + (Number(it.sysQty) || 0), 0);
         const countedSysQty = counted.reduce((sum, it) => sum + (Number(it.sysQty) || 0), 0);
         const totalCountQty = counted.reduce((sum, it) => sum + (Number(it.countQty) || 0), 0);
-        const netDiff = totalCountQty - countedSysQty;
+        const netDiff = totalCountQty - totalAllSysQty;
 
         const discrepancies = counted.map(it => {
           const sys = Number(it.sysQty) || 0;
@@ -13894,7 +13905,7 @@ function doPost(e) {
         let sealantExtraHtml = '';
         if (categoryKey === 'Sealant') {
           const soDus = counted.reduce((s, it) => s + calcSealantDusDecimal(it, Number(it.countQty) || 0), 0);
-          const sysDus = counted.reduce((s, it) => s + calcSealantDusDecimal(it, Number(it.sysQty) || 0), 0);
+          const sysDus = currentItems.reduce((s, it) => s + calcSealantDusDecimal(it, Number(it.sysQty) || 0), 0);
           const diffDus = soDus - sysDus;
           sealantExtraHtml = `
             <div class="rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 p-2.5 flex items-center justify-between gap-2 text-[11px]">
