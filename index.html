@@ -4834,7 +4834,7 @@
             </svg>
             <span>Share HTML</span>
           </button>
-          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none">version 26.11.73</span>
+          <span id="loginAppVersionLabel" class="text-[9px] font-mono font-semibold tracking-tight text-slate-400 dark:text-slate-500 select-none"><span id="loginAppVersionLabel">version 26.11.75</span></span>
         </div>
       </div>
     </div>
@@ -17044,4 +17044,11 @@ function doPost(e) {
 
 </script>
 
+<script>
+    try {
+      const _vMeta = document.querySelector('meta[name="mbg-app-version"]');
+      const _vLbl = document.getElementById('loginAppVersionLabel');
+      if (_vMeta && _vLbl) _vLbl.textContent = 'version ' + _vMeta.content;
+    } catch (e) {}
+</script>
 </body></html>
