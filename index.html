@@ -16990,7 +16990,7 @@ function doPost(e) {
             </div>`;
         }
 
-        const uncountedItems = currentItems.filter(it => !isAlreadyCounted(it));
+        const uncountedItems = currentItems.filter(it => !isAlreadyCounted(it) && (Number(it.sysQty) || 0) > 0);
         const uncountedSysQtySum = uncountedItems.reduce((sum, it) => sum + (Number(it.sysQty) || 0), 0);
         const uncountedRowsHtml = uncountedItems.length ? uncountedItems.map((it, idx) => {
           const sQty = Number(it.sysQty) || 0;
