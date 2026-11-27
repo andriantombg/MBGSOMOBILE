@@ -3247,7 +3247,41 @@
             <span>Belum: <b id="countPending">36</b></span>
           </div>
         </div>
-      </section>
+      
+        <!-- GRAFIK PERBANDINGAN SELISIH PER KATEGORI PER HISTORY SO -->
+        <div id="dashboardArchiveDiffSection" class="mt-2 pt-2.5 border-t border-slate-200/80 dark:border-slate-700/80 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="px-1.5 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 text-[10px] font-extrabold">📊 Grafik Per Kategori × History SO</span>
+              <span class="text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate">Perbandingan Selisih (Qty SO − Qty Sistem) Tiap Kategori Antar History Arsip</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 flex-wrap">
+              <select id="dashArchiveScopeSelect" class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-[10px] font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500" title="Pilih Cabang Arsip">
+                <option value="ACTIVE">Cabang Aktif</option>
+                <option value="ALL">Semua Cabang</option>
+              </select>
+              <select id="dashArchiveCategorySelect" class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-[10px] font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500" title="Pilih Kategori atau Tampilkan Semua Kategori">
+                <option value="ALL">Semua Kategori</option>
+                <option value="ACP">ACP</option>
+                <option value="Sealant">Sealant</option>
+                <option value="Sunsulate">Sunsulate</option>
+                <option value="Godia">Godia</option>
+                <option value="Rooftop">Rooftop</option>
+                <option value="Accessories">Accessories</option>
+              </select>
+              <select id="dashArchiveMetricSelect" class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-[10px] font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500" title="Pilih Metrik Perbandingan">
+                <option value="netDiff">Selisih (pcs)</option>
+                <option value="absDiff">Besar Selisih |Δ| (pcs)</option>
+                <option value="accuracy">Akurasi (%)</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="dashboardArchiveDiffBody" class="rounded-xl bg-slate-50/90 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-700/80 p-2.5">
+            <div class="text-center py-4 text-[11px] text-slate-400">Memuat grafik perbandingan per kategori per history SO...</div>
+          </div>
+        </div>
+</section>
     </div>
 
     <!-- ========================================== -->
@@ -6687,6 +6721,7 @@
       if (viewDashboardEl) {
         viewDashboardEl.classList.toggle('hidden', view !== 'dashboard');
         viewDashboardEl.classList.toggle('flex', view === 'dashboard');
+        if (view === 'dashboard') { renderDashboardArchiveDiffChart(); }
       }
       viewRecapEl.classList.toggle('hidden', view !== 'recap');
       if (viewAnaEl) {
@@ -8197,7 +8232,8 @@
             CTG: { counted: 0, sysQty: 0, soQty: 0, uncountedSysQty: 0, sysDus: 0, soDus: 0, uncountedSysDus: 0 },
             SP: { counted: 0, sysQty: 0, soQty: 0, uncountedSysQty: 0, sysDus: 0, soDus: 0, uncountedSysDus: 0 },
             OTHER: { counted: 0, sysQty: 0, soQty: 0, uncountedSysQty: 0 }
-          }
+          },
+          soUsers: new Set()
         };
       });
 
@@ -8252,6 +8288,24 @@
               if (sub.sysDus !== undefined) {
                 sub.sysDus += sDus;
               }
+            }
+          }
+
+          if (isCounted || (item.userCounts && Object.keys(item.userCounts).length > 0) || item.checker) {
+            if (item.userCounts && typeof item.userCounts === 'object') {
+              Object.keys(item.userCounts).forEach(uKey => {
+                const v = item.userCounts[uKey];
+                if (v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v))) {
+                  const cleanU = String(uKey || '').trim().toUpperCase();
+                  if (cleanU && cleanU !== 'UMUM') st.soUsers.add(cleanU);
+                }
+              });
+            }
+            if (item.checker) {
+              String(item.checker).split(',').forEach(part => {
+                const cleanC = String(part || '').trim().toUpperCase();
+                if (cleanC && cleanC !== 'UMUM' && cleanC !== 'PETUGAS') st.soUsers.add(cleanC);
+              });
             }
           }
 
@@ -8480,6 +8534,10 @@
               ${acpExtraRows}
               ${rejectRow}
               ${sealantDusRow}
+              <div class="mt-1.5 pt-1 border-t border-current/15 flex items-end justify-between gap-1 leading-tight">
+                <span class="text-[8px] sm:text-[8.5px] font-semibold text-slate-400 dark:text-slate-500">User SO</span>
+                <span class="text-[8.5px] sm:text-[9px] font-extrabold text-right break-words max-w-[75%] ${def.accentText}">${st.soUsers && st.soUsers.size > 0 ? '👤 ' + Array.from(st.soUsers).join(', ') : '-'}</span>
+              </div>
             </div>
           `;
         }).join('');
@@ -8591,7 +8649,347 @@
       document.getElementById('recapPlusCount').textContent = plusCount;
       document.getElementById('recapPendingCount').textContent = pendingCount;
       document.getElementById('recapDiscrepancyBadge').textContent = plusCount + minusCount;
+          renderDashboardArchiveDiffChart();
     }
+
+    function formatShortSoDateOnly(rawLabel, fallbackIdx = 0) {
+      const s = String(rawLabel || '').trim();
+      const monthMap = {
+        jan: 'JAN', january: 'JAN', januari: 'JAN',
+        feb: 'FEB', february: 'FEB', februari: 'FEB',
+        mar: 'MAR', march: 'MAR', maret: 'MAR',
+        apr: 'APR', april: 'APR',
+        may: 'MAY', mei: 'MAY',
+        jun: 'JUN', june: 'JUN', juni: 'JUN',
+        jul: 'JUL', july: 'JUL', juli: 'JUL',
+        aug: 'AUG', august: 'AUG', agustus: 'AUG', agt: 'AUG',
+        sep: 'SEP', sept: 'SEP', september: 'SEP',
+        oct: 'OCT', october: 'OCT', okt: 'OCT', oktober: 'OCT',
+        nov: 'NOV', november: 'NOV', nop: 'NOV',
+        dec: 'DEC', december: 'DEC', des: 'DEC', desember: 'DEC'
+      };
+
+      // Format ISO YYYY-MM-DD
+      const isoMatch = s.match(/\b(\d{4})[-/](\d{1,2})[-/](\d{1,2})\b/);
+      if (isoMatch) {
+        const yr = isoMatch[1].slice(-2);
+        const moIdx = Math.max(0, Math.min(11, Number(isoMatch[2]) - 1));
+        const moNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        const dd = String(Number(isoMatch[3])).padStart(2, '0');
+        return `${dd}${moNames[moIdx]}${yr}`;
+      }
+
+      // Format DD Mon YYYY atau DD-MM-YYYY atau Mon DD YYYY (termasuk string GMT+0700)
+      const dayMonthYearMatch = s.match(/\b(\d{1,2})[\s/-]+([A-Za-z]{3,10}|\d{1,2})[\s/-]+(\d{2,4})\b/);
+      if (dayMonthYearMatch) {
+        const dd = String(Number(dayMonthYearMatch[1])).padStart(2, '0');
+        const rawMo = dayMonthYearMatch[2].toLowerCase();
+        let moCode = '';
+        if (/^\d+$/.test(rawMo)) {
+          const moNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+          moCode = moNames[Math.max(0, Math.min(11, Number(rawMo) - 1))];
+        } else {
+          moCode = monthMap[rawMo] || monthMap[rawMo.slice(0, 3)] || rawMo.slice(0, 3).toUpperCase();
+        }
+        const yr = String(dayMonthYearMatch[3]).slice(-2);
+        return `${dd}${moCode}${yr}`;
+      }
+
+      const monthDayYearMatch = s.match(/\b([A-Za-z]{3,10})\s+(\d{1,2}),?\s+(\d{2,4})\b/);
+      if (monthDayYearMatch) {
+        const rawMo = monthDayYearMatch[1].toLowerCase();
+        const moCode = monthMap[rawMo] || monthMap[rawMo.slice(0, 3)] || rawMo.slice(0, 3).toUpperCase();
+        const dd = String(Number(monthDayYearMatch[2])).padStart(2, '0');
+        const yr = String(monthDayYearMatch[3]).slice(-2);
+        return `${dd}${moCode}${yr}`;
+      }
+
+      // Jika sudah format ringkas seperti 17NOV26 atau 17 NOV 26
+      const compactMatch = s.replace(/\s+/g, '').toUpperCase().match(/^(\d{1,2})([A-Z]{3})(\d{2})$/);
+      if (compactMatch) {
+        return `${compactMatch[1].padStart(2, '0')}${compactMatch[2]}${compactMatch[3]}`;
+      }
+
+      // Coba parse Date jika string tanggal valid
+      const parsed = Date.parse(s);
+      if (!Number.isNaN(parsed)) {
+        const dt = new Date(parsed);
+        const dd = String(dt.getDate()).padStart(2, '0');
+        const moNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        const yr = String(dt.getFullYear()).slice(-2);
+        return `${dd}${moNames[dt.getMonth()]}${yr}`;
+      }
+
+      return `SO#${fallbackIdx + 1}`;
+    }
+
+    function computeArchiveCategoryBreakdown(arc, catKey) {
+      const items = Array.isArray(arc && arc.items) ? arc.items : [];
+      const knownKeys = new Set(['ACP', 'Sealant', 'Sunsulate', 'Godia', 'Rooftop', 'Accessories', 'Acc']);
+      let sysQty = 0, soQty = 0, counted = 0, match = 0, absDiffSum = 0;
+
+      items.forEach(it => {
+        if (!it || isExcludedNonSoItem(it)) return;
+        const normCat = normalizeSummaryCategoryKey(it.cat);
+        const matchesCat = (catKey === 'ALL')
+          ? true
+          : (catKey === 'Lainnya' ? !knownKeys.has(normCat) : (normCat === catKey || (catKey === 'Accessories' && normCat === 'Acc')));
+        if (!matchesCat) return;
+
+        const sQ = Number(it.sysQty) || 0;
+        const isCnt = Boolean(it.isCounted) || (it.countQty !== null && it.countQty !== undefined && it.countQty !== '');
+        const cQ = isCnt ? (Number(it.countQty) || 0) : 0;
+        const dQ = isCnt ? (cQ - sQ) : (Math.abs(sQ) >= 0.001 ? -sQ : 0);
+
+        sysQty += sQ;
+        if (isCnt) {
+          counted++;
+          soQty += cQ;
+          if (Math.abs(cQ - sQ) < 0.001) match++;
+        }
+        absDiffSum += Math.abs(dQ);
+      });
+
+      if (items.length === 0 && arc && arc.categoryDiffs && typeof arc.categoryDiffs === 'object') {
+        const rawD = Number(arc.categoryDiffs[catKey] ?? arc.categoryDiffs[catKey === 'Accessories' ? 'Acc' : catKey]);
+        if (Number.isFinite(rawD)) {
+          return { netDiff: rawD, absDiff: Math.abs(rawD), soQty: 0, sysQty: 0, counted: 1, match: rawD === 0 ? 1 : 0, accuracyPct: rawD === 0 ? 100 : 0 };
+        }
+      }
+
+      const netDiff = soQty - sysQty;
+      const accuracyPct = counted > 0 ? Math.round((match / counted) * 1000) / 10 : 0;
+      return { netDiff, absDiff: absDiffSum, soQty, sysQty, counted, match, accuracyPct };
+    }
+
+    function renderDashboardArchiveDiffChart() {
+      const bodyEl = document.getElementById('dashboardArchiveDiffBody');
+      if (!bodyEl) return;
+
+      const scopeVal = document.getElementById('dashArchiveScopeSelect')?.value || 'ACTIVE';
+      const catVal = document.getElementById('dashArchiveCategorySelect')?.value || 'ALL';
+      const metricVal = document.getElementById('dashArchiveMetricSelect')?.value || 'netDiff';
+      const activeBr = String(getActiveBranchCode() || '').trim().toUpperCase();
+
+      const archivesList = Array.isArray(soArchives) ? soArchives : [];
+      const filtered = archivesList.filter(a => {
+        if (scopeVal === 'ALL') return true;
+        return String(a.branch || '').trim().toUpperCase() === activeBr;
+      });
+
+      if (filtered.length === 0) {
+        const labelBr = scopeVal === 'ALL' ? 'semua cabang' : `cabang ${escapeHtml(activeBr || 'aktif')}`;
+        bodyEl.innerHTML = `
+          <div class="text-center py-5 px-3 space-y-1">
+            <div class="text-xs font-bold text-slate-600 dark:text-slate-300">Belum ada arsip SO tersimpan untuk ${labelBr}</div>
+            <div class="text-[10px] text-slate-400">Simpan riwayat SO melalui <b>Simpan Arsip</b> atau tab <b>Rekap Hasil SO → Arsip &amp; Perbandingan</b> untuk menampilkan grafik line per kategori dan selisih tiap SO.</div>
+          </div>`;
+        return;
+      }
+
+      const sorted = [...filtered].sort((a, b) => {
+        const ta = Number(a.timestamp || a.savedTimestamp || 0);
+        const tb = Number(b.timestamp || b.savedTimestamp || 0);
+        if (ta && tb && ta !== tb) return ta - tb;
+        return 0;
+      });
+      const soList = sorted.slice(-8).map((arc, idx) => ({
+        arc,
+        idx,
+        tglSo: formatShortSoDateOnly(arc.periodLabel || arc.savedAt || '', idx),
+        rawTitle: String(arc.periodLabel || arc.savedAt || `SO #${idx + 1}`),
+        branch: String(arc.branch || '').trim()
+      }));
+
+      const catPalette = {
+        ACP: { stroke: '#38bdf8', fill: '#0284c7', pill: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-400/30' },
+        Sealant: { stroke: '#34d399', fill: '#10b981', pill: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-400/30' },
+        Sunsulate: { stroke: '#fbbf24', fill: '#d97706', pill: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-400/30' },
+        Godia: { stroke: '#22d3ee', fill: '#0891b2', pill: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-400/30' },
+        Rooftop: { stroke: '#c084fc', fill: '#9333ea', pill: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-400/30' },
+        Accessories: { stroke: '#fb7185', fill: '#e11d48', pill: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-400/30' },
+        Lainnya: { stroke: '#94a3b8', fill: '#64748b', pill: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-400/30' }
+      };
+
+      const targetCats = (catVal === 'ALL')
+        ? SO_SUMMARY_CATEGORIES.filter(d => !d.optionalIfNonEmpty)
+        : SO_SUMMARY_CATEGORIES.filter(d => d.key === catVal);
+
+      const seriesData = targetCats.map(def => {
+        const pal = catPalette[def.key] || { stroke: '#60a5fa', fill: '#2563eb', pill: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-400/30' };
+        const points = soList.map(entry => {
+          const st = computeArchiveCategoryBreakdown(entry.arc, def.key);
+          let val = st.netDiff;
+          if (metricVal === 'absDiff') val = st.absDiff;
+          else if (metricVal === 'accuracy') val = st.accuracyPct;
+          return {
+            idx: entry.idx,
+            tglSo: entry.tglSo,
+            rawTitle: entry.rawTitle,
+            branch: entry.branch,
+            val,
+            netDiff: st.netDiff,
+            soQty: st.soQty,
+            sysQty: st.sysQty,
+            accuracyPct: st.accuracyPct
+          };
+        });
+        return { def, pal, points };
+      });
+
+      const allVals = seriesData.flatMap(s => s.points.map(p => p.val));
+      const rawMax = Math.max(0, ...allVals);
+      const rawMin = Math.min(0, ...allVals);
+      const padRange = Math.max(1, (rawMax - rawMin) * 0.12);
+      const axisMax = rawMax > 0 ? rawMax + padRange : 0;
+      const axisMin = rawMin < 0 ? rawMin - padRange : 0;
+      const span = Math.max(1, axisMax - axisMin);
+
+      const width = 760;
+      const height = 236;
+      const padLeft = 62;
+      const padRight = 32;
+      const padTop = 26;
+      const padBottom = 36;
+      const plotW = width - padLeft - padRight;
+      const plotH = height - padTop - padBottom;
+
+      const yForVal = (v) => {
+        const ratio = (v - axisMin) / span;
+        return padTop + plotH - (ratio * plotH);
+      };
+
+      const xForIdx = (idx) => {
+        if (soList.length <= 1) return padLeft + (plotW / 2);
+        return padLeft + (idx / (soList.length - 1)) * plotW;
+      };
+
+      const gridSteps = 4;
+      let gridSvg = '';
+      for (let g = 0; g <= gridSteps; g++) {
+        const gv = axisMin + (span * (g / gridSteps));
+        const gy = yForVal(gv);
+        gridSvg += `
+          <line x1="${padLeft}" y1="${gy.toFixed(1)}" x2="${width - padRight}" y2="${gy.toFixed(1)}" stroke="currentColor" class="text-slate-200 dark:text-slate-700/70" stroke-width="1" stroke-dasharray="${g === 0 || g === gridSteps ? '0' : '3,3'}" />
+          <text x="${padLeft - 8}" y="${(gy + 3.5).toFixed(1)}" text-anchor="end" class="fill-slate-500 dark:fill-slate-400" font-size="9.5" font-weight="700">${metricVal === 'accuracy' ? fmtNum(gv, 0) + '%' : fmtNum(gv, 0)}</text>
+        `;
+      }
+
+      if (axisMin < 0 && axisMax > 0) {
+        const zeroY = yForVal(0);
+        gridSvg += `<line x1="${padLeft}" y1="${zeroY.toFixed(1)}" x2="${width - padRight}" y2="${zeroY.toFixed(1)}" stroke="#64748b" stroke-width="1.2" />`;
+      }
+
+      let xAxisSvg = '';
+      soList.forEach((entry, idx) => {
+        const cx = xForIdx(idx);
+        const subBr = scopeVal === 'ALL' && entry.branch ? ` · ${entry.branch}` : '';
+        xAxisSvg += `
+          <line x1="${cx.toFixed(1)}" y1="${padTop}" x2="${cx.toFixed(1)}" y2="${padTop + plotH}" stroke="currentColor" class="text-slate-200/60 dark:text-slate-800" stroke-width="1" />
+          <text x="${cx.toFixed(1)}" y="${height - 12}" text-anchor="middle" class="fill-slate-700 dark:fill-slate-200" font-size="10" font-weight="800">${escapeHtml(entry.tglSo)}${escapeHtml(subBr)}</text>
+        `;
+      });
+
+      let linesSvg = '';
+      seriesData.forEach(({ def, pal, points }) => {
+        if (!points.length) return;
+        const coords = points.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${xForIdx(pt.idx).toFixed(1)} ${yForVal(pt.val).toFixed(1)}`).join(' ');
+        const dotsAndLabels = points.map(pt => {
+          const cx = xForIdx(pt.idx);
+          const cy = yForVal(pt.val);
+          const valShort = metricVal === 'accuracy'
+            ? `${fmtNum(pt.val, 1)}%`
+            : (Math.abs(pt.val) < 0.001 ? '0' : `${pt.val > 0 ? '+' : ''}${fmtNum(pt.val)}`);
+          const labelY = cy < padTop + 14 ? (cy + 14) : (cy - 8);
+          const titleTxt = `${def.label} | Tgl SO ${pt.tglSo}: Selisih ${pt.netDiff > 0 ? '+' : ''}${fmtNum(pt.netDiff)} pcs (SO ${fmtNum(pt.soQty)} vs Sistem ${fmtNum(pt.sysQty)}, Akurasi ${fmtNum(pt.accuracyPct, 1)}%)`;
+          return `
+            <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4.5" fill="${pal.fill}" stroke="#ffffff" stroke-width="1.6">
+              <title>${escapeHtml(titleTxt)}</title>
+            </circle>
+            <text x="${cx.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" fill="${pal.stroke}" font-size="9.5" font-weight="800">${escapeHtml(valShort)}</text>
+          `;
+        }).join('');
+
+        linesSvg += `
+          <g>
+            <path d="${coords}" fill="none" stroke="${pal.stroke}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            ${dotsAndLabels}
+          </g>
+        `;
+      });
+
+      const legendHtml = seriesData.map(({ def, pal }) => `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] font-extrabold ${pal.pill}">
+          <span class="w-3 h-1 rounded-full shrink-0" style="background:${pal.stroke};"></span>
+          <span>${escapeHtml(def.label)}</span>
+        </span>
+      `).join('');
+
+      const perSoSummaryHtml = soList.map((entry) => {
+        const totalNet = targetCats.reduce((acc, def) => acc + computeArchiveCategoryBreakdown(entry.arc, def.key).netDiff, 0);
+        const totalCls = Math.abs(totalNet) < 0.001
+          ? 'text-emerald-600 dark:text-emerald-400'
+          : (totalNet > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-rose-600 dark:text-rose-400');
+
+        const catBadges = targetCats.map(def => {
+          const st = computeArchiveCategoryBreakdown(entry.arc, def.key);
+          const dVal = st.netDiff;
+          const dCls = Math.abs(dVal) < 0.001
+            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
+            : (dVal > 0
+              ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800/60'
+              : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800/60');
+          const dStr = Math.abs(dVal) < 0.001 ? '0' : `${dVal > 0 ? '+' : ''}${fmtNum(dVal)}`;
+          return `<span class="px-2 py-0.5 rounded-md border text-[9.5px] font-bold tabular-nums ${dCls}">${escapeHtml(def.label)}: <b>${dStr}</b></span>`;
+        }).join('');
+
+        return `
+          <div class="rounded-xl bg-white/95 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 p-2.5 flex flex-col gap-1.5 shadow-2xs">
+            <div class="flex items-center justify-between gap-2 text-[10.5px]">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/70 text-indigo-800 dark:text-indigo-200 font-black tracking-wide">${escapeHtml(entry.tglSo)}</span>
+                ${scopeVal === 'ALL' && entry.branch ? `<span class="text-[9px] font-bold text-slate-500 dark:text-slate-400">${escapeHtml(entry.branch)}</span>` : ''}
+              </div>
+              <span class="font-black tabular-nums shrink-0 ${totalCls}">Total Selisih: ${totalNet > 0 ? '+' : ''}${fmtNum(totalNet)} pcs</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              ${catBadges}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const metricTitle = metricVal === 'accuracy' ? 'Akurasi SO (%)' : (metricVal === 'absDiff' ? 'Besar Selisih |Δ| (pcs)' : 'Selisih Bersih (pcs)');
+
+      bodyEl.innerHTML = `
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-200/80 dark:border-slate-700/80">
+          <div class="flex flex-wrap items-center gap-1.5">
+            ${legendHtml}
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200/70 dark:bg-slate-800 text-[9.5px] font-bold text-slate-600 dark:text-slate-300">Metrik: <b>${escapeHtml(metricTitle)}</b></span>
+          </div>
+          <span class="text-[10px] font-extrabold text-slate-600 dark:text-slate-300">Arsip SO: <b>${soList.length} Tanggal</b></span>
+        </div>
+
+        <div class="w-full overflow-x-auto bg-white/80 dark:bg-slate-950/50 rounded-xl border border-slate-200/80 dark:border-slate-800 p-2">
+          <svg viewBox="0 0 ${width} ${height}" class="w-full h-auto min-w-[420px] block select-none" role="img" aria-label="Grafik line selisih per kategori berdasarkan tanggal SO terarsip">
+            ${gridSvg}
+            ${xAxisSvg}
+            ${linesSvg}
+          </svg>
+        </div>
+
+        <div class="mt-2.5 space-y-1.5">
+          <div class="flex items-center justify-between text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span>Selisih Per Tanggal SO Terarsip</span>
+            <span>Satuan: pcs (SO − Sistem)</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            ${perSoSummaryHtml}
+          </div>
+        </div>
+      `;
+    }
+
 
     // ==========================================
     // REKAPITULASI VIEW RENDERING
@@ -13414,6 +13812,11 @@
       });
       document.getElementById('btnSyncArchivesSheet').addEventListener('click', () => fetchArchivesFromSheet(true));
       document.getElementById('archiveBranchFilter').addEventListener('change', renderArchiveAndComparisonView);
+      document.getElementById('dashArchiveScopeSelect')?.addEventListener('change', () => renderDashboardArchiveDiffChart());
+      document.getElementById('dashArchiveCategorySelect')?.addEventListener('change', () => renderDashboardArchiveDiffChart());
+      document.getElementById('dashArchiveMetricSelect')?.addEventListener('change', () => renderDashboardArchiveDiffChart());
+      document.getElementById('dashArchiveScopeSelect')?.addEventListener('change', () => renderDashboardArchiveDiffChart());
+      document.getElementById('dashArchiveMetricSelect')?.addEventListener('change', () => renderDashboardArchiveDiffChart());
       document.getElementById('compareBranchSelect').addEventListener('change', (e) => {
         populateComparePeriodSelectors(e.target.value);
         renderComparisonTableOnly();
