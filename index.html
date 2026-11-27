@@ -12446,9 +12446,15 @@
       } catch (e) {}
     }
 
-    const DEFAULT_APP_BUILD_NUMBER = '73';
+    const DEFAULT_APP_BUILD_NUMBER = '75';
 
     function getDynamicAppVersionCode() {
+      try {
+        const metaEl = document.querySelector('meta[name="mbg-app-version"]');
+        if (metaEl && metaEl.content && metaEl.content.trim()) {
+          return `version ${metaEl.content.trim()}`;
+        }
+      } catch (e) {}
       let buildNum = DEFAULT_APP_BUILD_NUMBER;
       try {
         const rawPath = decodeURIComponent(window.location.pathname || window.location.href || '');
@@ -16599,7 +16605,6 @@ function doPost(e) {
     });
 
   </script>
-&lt;
   <script>
     (function() {
       async function shareCurrentHtmlFile() {
@@ -16746,7 +16751,8 @@ function doPost(e) {
           const metaMatch = htmlText.match(/<meta\s+name=["']mbg-app-version["']\s+content=["']([^"']+)["']/i);
           const constMatch = htmlText.match(/const\s+DEFAULT_APP_BUILD_NUMBER\s*=\s*['"](\d+)['"]/);
           const remoteVer = metaMatch ? metaMatch[1].trim() : (constMatch ? `26.11.${constMatch[1]}` : '');
-          const localVer = `26.11.${CURRENT_BUILD}`;
+          const localMeta = document.querySelector('meta[name="mbg-app-version"]');
+          const localVer = (localMeta && localMeta.content) ? localMeta.content.trim() : `26.11.${CURRENT_BUILD}`;
           if (remoteVer && remoteVer !== localVer) {
             showHostingUpdateNotification(remoteVer, true);
           } else if (manualCheck && typeof showToast === 'function') {
