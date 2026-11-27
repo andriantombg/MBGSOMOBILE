@@ -8652,77 +8652,6 @@
           renderDashboardArchiveDiffChart();
     }
 
-    function formatShortSoDateOnly(rawLabel, fallbackIdx = 0) {
-      const s = String(rawLabel || '').trim();
-      const monthMap = {
-        jan: 'JAN', january: 'JAN', januari: 'JAN',
-        feb: 'FEB', february: 'FEB', februari: 'FEB',
-        mar: 'MAR', march: 'MAR', maret: 'MAR',
-        apr: 'APR', april: 'APR',
-        may: 'MAY', mei: 'MAY',
-        jun: 'JUN', june: 'JUN', juni: 'JUN',
-        jul: 'JUL', july: 'JUL', juli: 'JUL',
-        aug: 'AUG', august: 'AUG', agustus: 'AUG', agt: 'AUG',
-        sep: 'SEP', sept: 'SEP', september: 'SEP',
-        oct: 'OCT', october: 'OCT', okt: 'OCT', oktober: 'OCT',
-        nov: 'NOV', november: 'NOV', nop: 'NOV',
-        dec: 'DEC', december: 'DEC', des: 'DEC', desember: 'DEC'
-      };
-
-      // Format ISO YYYY-MM-DD
-      const isoMatch = s.match(/\b(\d{4})[-/](\d{1,2})[-/](\d{1,2})\b/);
-      if (isoMatch) {
-        const yr = isoMatch[1].slice(-2);
-        const moIdx = Math.max(0, Math.min(11, Number(isoMatch[2]) - 1));
-        const moNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-        const dd = String(Number(isoMatch[3])).padStart(2, '0');
-        return `${dd}${moNames[moIdx]}${yr}`;
-      }
-
-      // Format DD Mon YYYY atau DD-MM-YYYY atau Mon DD YYYY (termasuk string GMT+0700)
-      const dayMonthYearMatch = s.match(/\b(\d{1,2})[\s/-]+([A-Za-z]{3,10}|\d{1,2})[\s/-]+(\d{2,4})\b/);
-      if (dayMonthYearMatch) {
-        const dd = String(Number(dayMonthYearMatch[1])).padStart(2, '0');
-        const rawMo = dayMonthYearMatch[2].toLowerCase();
-        let moCode = '';
-        if (/^\d+$/.test(rawMo)) {
-          const moNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-          moCode = moNames[Math.max(0, Math.min(11, Number(rawMo) - 1))];
-        } else {
-          moCode = monthMap[rawMo] || monthMap[rawMo.slice(0, 3)] || rawMo.slice(0, 3).toUpperCase();
-        }
-        const yr = String(dayMonthYearMatch[3]).slice(-2);
-        return `${dd}${moCode}${yr}`;
-      }
-
-      const monthDayYearMatch = s.match(/\b([A-Za-z]{3,10})\s+(\d{1,2}),?\s+(\d{2,4})\b/);
-      if (monthDayYearMatch) {
-        const rawMo = monthDayYearMatch[1].toLowerCase();
-        const moCode = monthMap[rawMo] || monthMap[rawMo.slice(0, 3)] || rawMo.slice(0, 3).toUpperCase();
-        const dd = String(Number(monthDayYearMatch[2])).padStart(2, '0');
-        const yr = String(monthDayYearMatch[3]).slice(-2);
-        return `${dd}${moCode}${yr}`;
-      }
-
-      // Jika sudah format ringkas seperti 17NOV26 atau 17 NOV 26
-      const compactMatch = s.replace(/\s+/g, '').toUpperCase().match(/^(\d{1,2})([A-Z]{3})(\d{2})$/);
-      if (compactMatch) {
-        return `${compactMatch[1].padStart(2, '0')}${compactMatch[2]}${compactMatch[3]}`;
-      }
-
-      // Coba parse Date jika string tanggal valid
-      const parsed = Date.parse(s);
-      if (!Number.isNaN(parsed)) {
-        const dt = new Date(parsed);
-        const dd = String(dt.getDate()).padStart(2, '0');
-        const moNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-        const yr = String(dt.getFullYear()).slice(-2);
-        return `${dd}${moNames[dt.getMonth()]}${yr}`;
-      }
-
-      return `SO#${fallbackIdx + 1}`;
-    }
-
     function computeArchiveCategoryBreakdown(arc, catKey) {
       const items = Array.isArray(arc && arc.items) ? arc.items : [];
       const knownKeys = new Set(['ACP', 'Sealant', 'Sunsulate', 'Godia', 'Rooftop', 'Accessories', 'Acc']);
@@ -8780,9 +8709,9 @@
       if (filtered.length === 0) {
         const labelBr = scopeVal === 'ALL' ? 'semua cabang' : `cabang ${escapeHtml(activeBr || 'aktif')}`;
         bodyEl.innerHTML = `
-          <div class="text-center py-5 px-3 space-y-1">
-            <div class="text-xs font-bold text-slate-600 dark:text-slate-300">Belum ada arsip SO tersimpan untuk ${labelBr}</div>
-            <div class="text-[10px] text-slate-400">Simpan riwayat SO melalui <b>Simpan Arsip</b> atau tab <b>Rekap Hasil SO → Arsip &amp; Perbandingan</b> untuk menampilkan grafik line per kategori dan selisih tiap SO.</div>
+          <div class="text-center py-4 px-2 space-y-1">
+            <div class="text-xs font-bold text-slate-600 dark:text-slate-300">Belum ada SO terarsip untuk ${labelBr}</div>
+            <div class="text-[10px] text-slate-400">Simpan hasil SO melalui <b>Simpan Arsip</b> atau tab <b>Rekap Hasil SO → Arsip &amp; Perbandingan</b> untuk menampilkan grafik line per kategori dan selisih tiap SO.</div>
           </div>`;
         return;
       }
@@ -8793,22 +8722,16 @@
         if (ta && tb && ta !== tb) return ta - tb;
         return 0;
       });
-      const soList = sorted.slice(-8).map((arc, idx) => ({
-        arc,
-        idx,
-        tglSo: formatShortSoDateOnly(arc.periodLabel || arc.savedAt || '', idx),
-        rawTitle: String(arc.periodLabel || arc.savedAt || `SO #${idx + 1}`),
-        branch: String(arc.branch || '').trim()
-      }));
+      const soList = sorted.slice(-8);
 
       const catPalette = {
-        ACP: { stroke: '#38bdf8', fill: '#0284c7', pill: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-400/30' },
-        Sealant: { stroke: '#34d399', fill: '#10b981', pill: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-400/30' },
-        Sunsulate: { stroke: '#fbbf24', fill: '#d97706', pill: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-400/30' },
-        Godia: { stroke: '#22d3ee', fill: '#0891b2', pill: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-400/30' },
-        Rooftop: { stroke: '#c084fc', fill: '#9333ea', pill: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-400/30' },
-        Accessories: { stroke: '#fb7185', fill: '#e11d48', pill: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-400/30' },
-        Lainnya: { stroke: '#94a3b8', fill: '#64748b', pill: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-400/30' }
+        ACP: { stroke: '#0284c7', fill: '#0284c7' },
+        Sealant: { stroke: '#10b981', fill: '#10b981' },
+        Sunsulate: { stroke: '#d97706', fill: '#d97706' },
+        Godia: { stroke: '#0891b2', fill: '#0891b2' },
+        Rooftop: { stroke: '#9333ea', fill: '#9333ea' },
+        Accessories: { stroke: '#e11d48', fill: '#e11d48' },
+        Lainnya: { stroke: '#64748b', fill: '#64748b' }
       };
 
       const targetCats = (catVal === 'ALL')
@@ -8816,17 +8739,17 @@
         : SO_SUMMARY_CATEGORIES.filter(d => d.key === catVal);
 
       const seriesData = targetCats.map(def => {
-        const pal = catPalette[def.key] || { stroke: '#60a5fa', fill: '#2563eb', pill: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-400/30' };
-        const points = soList.map(entry => {
-          const st = computeArchiveCategoryBreakdown(entry.arc, def.key);
+        const pal = catPalette[def.key] || { stroke: '#3b82f6', fill: '#3b82f6' };
+        const points = soList.map((arc, idx) => {
+          const st = computeArchiveCategoryBreakdown(arc, def.key);
           let val = st.netDiff;
           if (metricVal === 'absDiff') val = st.absDiff;
           else if (metricVal === 'accuracy') val = st.accuracyPct;
           return {
-            idx: entry.idx,
-            tglSo: entry.tglSo,
-            rawTitle: entry.rawTitle,
-            branch: entry.branch,
+            idx,
+            arc,
+            label: arc.periodLabel || ('SO #' + (idx + 1)),
+            branch: arc.branch || '',
             val,
             netDiff: st.netDiff,
             soQty: st.soQty,
@@ -8840,22 +8763,19 @@
       const allVals = seriesData.flatMap(s => s.points.map(p => p.val));
       const rawMax = Math.max(0, ...allVals);
       const rawMin = Math.min(0, ...allVals);
-      const padRange = Math.max(1, (rawMax - rawMin) * 0.12);
-      const axisMax = rawMax > 0 ? rawMax + padRange : 0;
-      const axisMin = rawMin < 0 ? rawMin - padRange : 0;
-      const span = Math.max(1, axisMax - axisMin);
+      const span = Math.max(1, rawMax - rawMin);
 
       const width = 760;
-      const height = 236;
-      const padLeft = 62;
-      const padRight = 32;
-      const padTop = 26;
-      const padBottom = 36;
+      const height = 230;
+      const padLeft = 58;
+      const padRight = 24;
+      const padTop = 22;
+      const padBottom = 38;
       const plotW = width - padLeft - padRight;
       const plotH = height - padTop - padBottom;
 
       const yForVal = (v) => {
-        const ratio = (v - axisMin) / span;
+        const ratio = (v - rawMin) / span;
         return padTop + plotH - (ratio * plotH);
       };
 
@@ -8867,26 +8787,28 @@
       const gridSteps = 4;
       let gridSvg = '';
       for (let g = 0; g <= gridSteps; g++) {
-        const gv = axisMin + (span * (g / gridSteps));
+        const gv = rawMin + (span * (g / gridSteps));
         const gy = yForVal(gv);
         gridSvg += `
-          <line x1="${padLeft}" y1="${gy.toFixed(1)}" x2="${width - padRight}" y2="${gy.toFixed(1)}" stroke="currentColor" class="text-slate-200 dark:text-slate-700/70" stroke-width="1" stroke-dasharray="${g === 0 || g === gridSteps ? '0' : '3,3'}" />
-          <text x="${padLeft - 8}" y="${(gy + 3.5).toFixed(1)}" text-anchor="end" class="fill-slate-500 dark:fill-slate-400" font-size="9.5" font-weight="700">${metricVal === 'accuracy' ? fmtNum(gv, 0) + '%' : fmtNum(gv, 0)}</text>
+          <line x1="${padLeft}" y1="${gy.toFixed(1)}" x2="${width - padRight}" y2="${gy.toFixed(1)}" stroke="currentColor" class="text-slate-200 dark:text-slate-700/80" stroke-width="1" stroke-dasharray="${g === 0 || g === gridSteps ? '0' : '3,3'}" />
+          <text x="${padLeft - 6}" y="${(gy + 3).toFixed(1)}" text-anchor="end" class="fill-slate-500 dark:fill-slate-400" font-size="9.5" font-weight="700">${metricVal === 'accuracy' ? fmtNum(gv, 0) + '%' : fmtNum(gv, 0)}</text>
         `;
       }
 
-      if (axisMin < 0 && axisMax > 0) {
+      if (rawMin < 0 && rawMax > 0) {
         const zeroY = yForVal(0);
-        gridSvg += `<line x1="${padLeft}" y1="${zeroY.toFixed(1)}" x2="${width - padRight}" y2="${zeroY.toFixed(1)}" stroke="#64748b" stroke-width="1.2" />`;
+        gridSvg += `<line x1="${padLeft}" y1="${zeroY.toFixed(1)}" x2="${width - padRight}" y2="${zeroY.toFixed(1)}" stroke="#94a3b8" stroke-width="1.2" />`;
       }
 
       let xAxisSvg = '';
-      soList.forEach((entry, idx) => {
+      soList.forEach((arc, idx) => {
         const cx = xForIdx(idx);
-        const subBr = scopeVal === 'ALL' && entry.branch ? ` · ${entry.branch}` : '';
+        const pLbl = arc.periodLabel || ('SO #' + (idx + 1));
+        const bLbl = scopeVal === 'ALL' && arc.branch ? ` (${arc.branch})` : '';
         xAxisSvg += `
           <line x1="${cx.toFixed(1)}" y1="${padTop}" x2="${cx.toFixed(1)}" y2="${padTop + plotH}" stroke="currentColor" class="text-slate-200/60 dark:text-slate-800" stroke-width="1" />
-          <text x="${cx.toFixed(1)}" y="${height - 12}" text-anchor="middle" class="fill-slate-700 dark:fill-slate-200" font-size="10" font-weight="800">${escapeHtml(entry.tglSo)}${escapeHtml(subBr)}</text>
+          <text x="${cx.toFixed(1)}" y="${height - 14}" text-anchor="middle" class="fill-slate-700 dark:fill-slate-200" font-size="9.5" font-weight="800">${escapeHtml(pLbl)}</text>
+          ${bLbl ? `<text x="${cx.toFixed(1)}" y="${height - 3}" text-anchor="middle" class="fill-indigo-500 dark:fill-indigo-300" font-size="8" font-weight="700">${escapeHtml(bLbl)}</text>` : ''}
         `;
       });
 
@@ -8894,45 +8816,40 @@
       seriesData.forEach(({ def, pal, points }) => {
         if (!points.length) return;
         const coords = points.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${xForIdx(pt.idx).toFixed(1)} ${yForVal(pt.val).toFixed(1)}`).join(' ');
-        const dotsAndLabels = points.map(pt => {
-          const cx = xForIdx(pt.idx);
-          const cy = yForVal(pt.val);
-          const valShort = metricVal === 'accuracy'
-            ? `${fmtNum(pt.val, 1)}%`
-            : (Math.abs(pt.val) < 0.001 ? '0' : `${pt.val > 0 ? '+' : ''}${fmtNum(pt.val)}`);
-          const labelY = cy < padTop + 14 ? (cy + 14) : (cy - 8);
-          const titleTxt = `${def.label} | Tgl SO ${pt.tglSo}: Selisih ${pt.netDiff > 0 ? '+' : ''}${fmtNum(pt.netDiff)} pcs (SO ${fmtNum(pt.soQty)} vs Sistem ${fmtNum(pt.sysQty)}, Akurasi ${fmtNum(pt.accuracyPct, 1)}%)`;
+        const dots = points.map(pt => {
+          const cx = xForIdx(pt.idx).toFixed(1);
+          const cy = yForVal(pt.val).toFixed(1);
+          const titleTxt = `${def.label} | ${pt.label}: Selisih ${pt.netDiff > 0 ? '+' : ''}${fmtNum(pt.netDiff)} pcs (SO ${fmtNum(pt.soQty)} vs Sistem ${fmtNum(pt.sysQty)}, Akurasi ${fmtNum(pt.accuracyPct, 1)}%)`;
           return `
-            <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4.5" fill="${pal.fill}" stroke="#ffffff" stroke-width="1.6">
+            <circle cx="${cx}" cy="${cy}" r="4.2" fill="${pal.fill}" stroke="#ffffff" stroke-width="1.5">
               <title>${escapeHtml(titleTxt)}</title>
             </circle>
-            <text x="${cx.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" fill="${pal.stroke}" font-size="9.5" font-weight="800">${escapeHtml(valShort)}</text>
           `;
         }).join('');
 
         linesSvg += `
           <g>
-            <path d="${coords}" fill="none" stroke="${pal.stroke}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-            ${dotsAndLabels}
+            <path d="${coords}" fill="none" stroke="${pal.stroke}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+            ${dots}
           </g>
         `;
       });
 
       const legendHtml = seriesData.map(({ def, pal }) => `
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] font-extrabold ${pal.pill}">
-          <span class="w-3 h-1 rounded-full shrink-0" style="background:${pal.stroke};"></span>
+        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[9.5px] font-extrabold text-slate-700 dark:text-slate-200">
+          <span class="w-2.5 h-1 rounded-full shrink-0" style="background:${pal.stroke};"></span>
           <span>${escapeHtml(def.label)}</span>
         </span>
       `).join('');
 
-      const perSoSummaryHtml = soList.map((entry) => {
-        const totalNet = targetCats.reduce((acc, def) => acc + computeArchiveCategoryBreakdown(entry.arc, def.key).netDiff, 0);
+      const perSoSummaryHtml = soList.map((arc, idx) => {
+        const totalNet = targetCats.reduce((acc, def) => acc + computeArchiveCategoryBreakdown(arc, def.key).netDiff, 0);
         const totalCls = Math.abs(totalNet) < 0.001
           ? 'text-emerald-600 dark:text-emerald-400'
           : (totalNet > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-rose-600 dark:text-rose-400');
 
         const catBadges = targetCats.map(def => {
-          const st = computeArchiveCategoryBreakdown(entry.arc, def.key);
+          const st = computeArchiveCategoryBreakdown(arc, def.key);
           const dVal = st.netDiff;
           const dCls = Math.abs(dVal) < 0.001
             ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
@@ -8940,38 +8857,35 @@
               ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800/60'
               : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800/60');
           const dStr = Math.abs(dVal) < 0.001 ? '0' : `${dVal > 0 ? '+' : ''}${fmtNum(dVal)}`;
-          return `<span class="px-2 py-0.5 rounded-md border text-[9.5px] font-bold tabular-nums ${dCls}">${escapeHtml(def.label)}: <b>${dStr}</b></span>`;
+          return `<span class="px-1.5 py-0.5 rounded border text-[9px] font-bold tabular-nums ${dCls}">${escapeHtml(def.label)}: <b>${dStr}</b></span>`;
         }).join('');
 
         return `
-          <div class="rounded-xl bg-white/95 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 p-2.5 flex flex-col gap-1.5 shadow-2xs">
-            <div class="flex items-center justify-between gap-2 text-[10.5px]">
-              <div class="flex items-center gap-1.5 min-w-0">
-                <span class="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/70 text-indigo-800 dark:text-indigo-200 font-black tracking-wide">${escapeHtml(entry.tglSo)}</span>
-                ${scopeVal === 'ALL' && entry.branch ? `<span class="text-[9px] font-bold text-slate-500 dark:text-slate-400">${escapeHtml(entry.branch)}</span>` : ''}
+          <div class="rounded-lg bg-white/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 p-2 space-y-1.5">
+            <div class="flex items-center justify-between gap-2 text-[10px]">
+              <div class="min-w-0">
+                <span class="font-extrabold text-slate-800 dark:text-slate-100">${escapeHtml(arc.periodLabel || ('SO #' + (idx + 1)))}</span>
+                ${scopeVal === 'ALL' && arc.branch ? `<span class="ml-1 px-1.5 py-0.2 rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-200 text-[8.5px] font-bold">${escapeHtml(arc.branch)}</span>` : ''}
               </div>
               <span class="font-black tabular-nums shrink-0 ${totalCls}">Total Selisih: ${totalNet > 0 ? '+' : ''}${fmtNum(totalNet)} pcs</span>
             </div>
-            <div class="flex flex-wrap gap-1.5">
+            <div class="flex flex-wrap gap-1">
               ${catBadges}
             </div>
           </div>
         `;
       }).join('');
 
-      const metricTitle = metricVal === 'accuracy' ? 'Akurasi SO (%)' : (metricVal === 'absDiff' ? 'Besar Selisih |Δ| (pcs)' : 'Selisih Bersih (pcs)');
-
       bodyEl.innerHTML = `
         <div class="flex flex-wrap items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-200/80 dark:border-slate-700/80">
           <div class="flex flex-wrap items-center gap-1.5">
             ${legendHtml}
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200/70 dark:bg-slate-800 text-[9.5px] font-bold text-slate-600 dark:text-slate-300">Metrik: <b>${escapeHtml(metricTitle)}</b></span>
           </div>
-          <span class="text-[10px] font-extrabold text-slate-600 dark:text-slate-300">Arsip SO: <b>${soList.length} Tanggal</b></span>
+          <span class="text-[9.5px] font-bold text-slate-500 dark:text-slate-400">Terarsip: <b>${soList.length} SO</b></span>
         </div>
 
-        <div class="w-full overflow-x-auto bg-white/80 dark:bg-slate-950/50 rounded-xl border border-slate-200/80 dark:border-slate-800 p-2">
-          <svg viewBox="0 0 ${width} ${height}" class="w-full h-auto min-w-[420px] block select-none" role="img" aria-label="Grafik line selisih per kategori berdasarkan tanggal SO terarsip">
+        <div class="w-full overflow-x-auto bg-white/70 dark:bg-slate-950/40 rounded-xl border border-slate-200/70 dark:border-slate-800 p-1.5">
+          <svg viewBox="0 0 ${width} ${height}" class="w-full h-auto min-w-[440px] block select-none" role="img" aria-label="Grafik line selisih per kategori antar SO yang diarsipkan">
             ${gridSvg}
             ${xAxisSvg}
             ${linesSvg}
@@ -8979,11 +8893,8 @@
         </div>
 
         <div class="mt-2.5 space-y-1.5">
-          <div class="flex items-center justify-between text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            <span>Selisih Per Tanggal SO Terarsip</span>
-            <span>Satuan: pcs (SO − Sistem)</span>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div class="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">Rincian Selisih (pcs) Per SO Yang Sudah Diarsipkan</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             ${perSoSummaryHtml}
           </div>
         </div>
